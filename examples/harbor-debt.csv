@@ -1,0 +1,25 @@
+payment_id,facility,due_date,principal,interest,maturity_amount,synthetic
+DEBT-202501,Equipment term loan,2025-01-28,2500.00,600.00,0.00,true
+DEBT-202502,Equipment term loan,2025-02-28,2500.00,575.00,0.00,true
+DEBT-202503,Equipment term loan,2025-03-28,2500.00,550.00,0.00,true
+DEBT-202504,Equipment term loan,2025-04-28,2500.00,525.00,0.00,true
+DEBT-202505,Equipment term loan,2025-05-28,2500.00,500.00,0.00,true
+DEBT-202506,Equipment term loan,2025-06-28,2500.00,475.00,0.00,true
+DEBT-202507,Equipment term loan,2025-07-28,2500.00,450.00,0.00,true
+DEBT-202508,Equipment term loan,2025-08-28,2500.00,425.00,0.00,true
+DEBT-202509,Equipment term loan,2025-09-28,2500.00,400.00,0.00,true
+DEBT-202510,Equipment term loan,2025-10-28,2500.00,375.00,0.00,true
+DEBT-202511,Equipment term loan,2025-11-28,2500.00,350.00,0.00,true
+DEBT-202512,Equipment term loan,2025-12-28,2500.00,325.00,0.00,true
+DEBT-202601,Equipment term loan,2026-01-28,2500.00,300.00,0.00,true
+DEBT-202602,Equipment term loan,2026-02-28,2500.00,275.00,0.00,true
+DEBT-202603,Equipment term loan,2026-03-28,2500.00,250.00,0.00,true
+DEBT-202604,Equipment term loan,2026-04-28,2500.00,225.00,0.00,true
+DEBT-202605,Equipment term loan,2026-05-28,2500.00,200.00,0.00,true
+DEBT-202606,Equipment term loan,2026-06-28,2500.00,175.00,0.00,true
+DEBT-202607,Equipment term loan,2026-07-28,2500.00,150.00,0.00,true
+DEBT-202608,Equipment term loan,2026-08-28,2500.00,125.00,0.00,true
+DEBT-202609,Equipment term loan,2026-09-28,2500.00,100.00,0.00,true
+DEBT-202610,Equipment term loan,2026-10-28,2500.00,75.00,0.00,true
+DEBT-202611,Equipment term loan,2026-11-28,2500.00,50.00,0.00,true
+DEBT-202612,Equipment term loan,2026-12-28,2500.00,25.00,0.00,true

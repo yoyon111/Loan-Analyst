@@ -1,0 +1,18 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: investoffice
+      POSTGRES_USER: investoffice
+      POSTGRES_PASSWORD: investoffice
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - investoffice_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U investoffice"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+volumes:
+  investoffice_pg:

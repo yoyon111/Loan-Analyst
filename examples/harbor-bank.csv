@@ -1,0 +1,327 @@
+transaction_id,date,category,amount,reference,synthetic
+RCPT-HOS-202411-11,2025-01-06,customer_receipt,10000.00,HOS-202411-11,true
+RCPT-HOS-202411-12,2025-01-06,customer_receipt,6250.00,HOS-202411-12,true
+RCPT-HOS-202411-13,2025-01-06,customer_receipt,5000.00,HOS-202411-13,true
+RCPT-HOS-202411-14,2025-01-06,customer_receipt,3750.00,HOS-202411-14,true
+RCPT-HOS-202411-21,2025-01-13,customer_receipt,10000.00,HOS-202411-21,true
+RCPT-HOS-202411-22,2025-01-13,customer_receipt,6250.00,HOS-202411-22,true
+RCPT-HOS-202411-23,2025-01-13,customer_receipt,5000.00,HOS-202411-23,true
+RCPT-HOS-202411-24,2025-01-13,customer_receipt,3750.00,HOS-202411-24,true
+RCPT-HOS-202411-31,2025-01-20,customer_receipt,10000.00,HOS-202411-31,true
+RCPT-HOS-202411-32,2025-01-20,customer_receipt,6250.00,HOS-202411-32,true
+RCPT-HOS-202411-33,2025-01-20,customer_receipt,5000.00,HOS-202411-33,true
+RCPT-HOS-202411-34,2025-01-20,customer_receipt,3750.00,HOS-202411-34,true
+RCPT-HOS-202411-41,2025-01-27,customer_receipt,10000.00,HOS-202411-41,true
+RCPT-HOS-202411-42,2025-01-27,customer_receipt,6250.00,HOS-202411-42,true
+RCPT-HOS-202411-43,2025-01-27,customer_receipt,5000.00,HOS-202411-43,true
+RCPT-HOS-202411-44,2025-01-27,customer_receipt,3750.00,HOS-202411-44,true
+RCPT-HOS-202412-11,2025-02-05,customer_receipt,10000.00,HOS-202412-11,true
+RCPT-HOS-202412-12,2025-02-05,customer_receipt,6250.00,HOS-202412-12,true
+RCPT-HOS-202412-13,2025-02-05,customer_receipt,5000.00,HOS-202412-13,true
+RCPT-HOS-202412-14,2025-02-05,customer_receipt,3750.00,HOS-202412-14,true
+RCPT-HOS-202412-21,2025-02-12,customer_receipt,10000.00,HOS-202412-21,true
+RCPT-HOS-202412-22,2025-02-12,customer_receipt,6250.00,HOS-202412-22,true
+RCPT-HOS-202412-23,2025-02-12,customer_receipt,5000.00,HOS-202412-23,true
+RCPT-HOS-202412-24,2025-02-12,customer_receipt,3750.00,HOS-202412-24,true
+RCPT-HOS-202412-31,2025-02-19,customer_receipt,10000.00,HOS-202412-31,true
+RCPT-HOS-202412-32,2025-02-19,customer_receipt,6250.00,HOS-202412-32,true
+RCPT-HOS-202412-33,2025-02-19,customer_receipt,5000.00,HOS-202412-33,true
+RCPT-HOS-202412-34,2025-02-19,customer_receipt,3750.00,HOS-202412-34,true
+RCPT-HOS-202412-41,2025-02-26,customer_receipt,10000.00,HOS-202412-41,true
+RCPT-HOS-202412-42,2025-02-26,customer_receipt,6250.00,HOS-202412-42,true
+RCPT-HOS-202412-43,2025-02-26,customer_receipt,5000.00,HOS-202412-43,true
+RCPT-HOS-202412-44,2025-02-26,customer_receipt,3750.00,HOS-202412-44,true
+RCPT-HOS-202501-11,2025-03-08,customer_receipt,10000.00,HOS-202501-11,true
+RCPT-HOS-202501-12,2025-03-08,customer_receipt,6250.00,HOS-202501-12,true
+RCPT-HOS-202501-13,2025-03-08,customer_receipt,5000.00,HOS-202501-13,true
+RCPT-HOS-202501-14,2025-03-08,customer_receipt,3750.00,HOS-202501-14,true
+RCPT-HOS-202501-21,2025-03-15,customer_receipt,10000.00,HOS-202501-21,true
+RCPT-HOS-202501-22,2025-03-15,customer_receipt,6250.00,HOS-202501-22,true
+RCPT-HOS-202501-23,2025-03-15,customer_receipt,5000.00,HOS-202501-23,true
+RCPT-HOS-202501-24,2025-03-15,customer_receipt,3750.00,HOS-202501-24,true
+RCPT-HOS-202501-31,2025-03-22,customer_receipt,10000.00,HOS-202501-31,true
+RCPT-HOS-202501-32,2025-03-22,customer_receipt,6250.00,HOS-202501-32,true
+RCPT-HOS-202501-33,2025-03-22,customer_receipt,5000.00,HOS-202501-33,true
+RCPT-HOS-202501-34,2025-03-22,customer_receipt,3750.00,HOS-202501-34,true
+RCPT-HOS-202501-41,2025-03-29,customer_receipt,10000.00,HOS-202501-41,true
+RCPT-HOS-202501-42,2025-03-29,customer_receipt,6250.00,HOS-202501-42,true
+RCPT-HOS-202501-43,2025-03-29,customer_receipt,5000.00,HOS-202501-43,true
+RCPT-HOS-202501-44,2025-03-29,customer_receipt,3750.00,HOS-202501-44,true
+RCPT-HOS-202502-11,2025-04-08,customer_receipt,10000.00,HOS-202502-11,true
+RCPT-HOS-202502-12,2025-04-08,customer_receipt,6250.00,HOS-202502-12,true
+RCPT-HOS-202502-13,2025-04-08,customer_receipt,5000.00,HOS-202502-13,true
+RCPT-HOS-202502-14,2025-04-08,customer_receipt,3750.00,HOS-202502-14,true
+RCPT-HOS-202502-21,2025-04-15,customer_receipt,10000.00,HOS-202502-21,true
+RCPT-HOS-202502-22,2025-04-15,customer_receipt,6250.00,HOS-202502-22,true
+RCPT-HOS-202502-23,2025-04-15,customer_receipt,5000.00,HOS-202502-23,true
+RCPT-HOS-202502-24,2025-04-15,customer_receipt,3750.00,HOS-202502-24,true
+RCPT-HOS-202502-31,2025-04-22,customer_receipt,10000.00,HOS-202502-31,true
+RCPT-HOS-202502-32,2025-04-22,customer_receipt,6250.00,HOS-202502-32,true
+RCPT-HOS-202502-33,2025-04-22,customer_receipt,5000.00,HOS-202502-33,true
+RCPT-HOS-202502-34,2025-04-22,customer_receipt,3750.00,HOS-202502-34,true
+RCPT-HOS-202502-41,2025-04-29,customer_receipt,10000.00,HOS-202502-41,true
+RCPT-HOS-202502-42,2025-04-29,customer_receipt,6250.00,HOS-202502-42,true
+RCPT-HOS-202502-43,2025-04-29,customer_receipt,5000.00,HOS-202502-43,true
+RCPT-HOS-202502-44,2025-04-29,customer_receipt,3750.00,HOS-202502-44,true
+RCPT-HOS-202503-11,2025-05-06,customer_receipt,10000.00,HOS-202503-11,true
+RCPT-HOS-202503-12,2025-05-06,customer_receipt,6250.00,HOS-202503-12,true
+RCPT-HOS-202503-13,2025-05-06,customer_receipt,5000.00,HOS-202503-13,true
+RCPT-HOS-202503-14,2025-05-06,customer_receipt,3750.00,HOS-202503-14,true
+RCPT-HOS-202503-21,2025-05-13,customer_receipt,10000.00,HOS-202503-21,true
+RCPT-HOS-202503-22,2025-05-13,customer_receipt,6250.00,HOS-202503-22,true
+RCPT-HOS-202503-23,2025-05-13,customer_receipt,5000.00,HOS-202503-23,true
+RCPT-HOS-202503-24,2025-05-13,customer_receipt,3750.00,HOS-202503-24,true
+RCPT-HOS-202503-31,2025-05-20,customer_receipt,10000.00,HOS-202503-31,true
+RCPT-HOS-202503-32,2025-05-20,customer_receipt,6250.00,HOS-202503-32,true
+RCPT-HOS-202503-33,2025-05-20,customer_receipt,5000.00,HOS-202503-33,true
+RCPT-HOS-202503-34,2025-05-20,customer_receipt,3750.00,HOS-202503-34,true
+RCPT-HOS-202503-41,2025-05-27,customer_receipt,10000.00,HOS-202503-41,true
+RCPT-HOS-202503-42,2025-05-27,customer_receipt,6250.00,HOS-202503-42,true
+RCPT-HOS-202503-43,2025-05-27,customer_receipt,5000.00,HOS-202503-43,true
+RCPT-HOS-202503-44,2025-05-27,customer_receipt,3750.00,HOS-202503-44,true
+RCPT-HOS-202504-11,2025-06-06,customer_receipt,10000.00,HOS-202504-11,true
+RCPT-HOS-202504-12,2025-06-06,customer_receipt,6250.00,HOS-202504-12,true
+RCPT-HOS-202504-13,2025-06-06,customer_receipt,5000.00,HOS-202504-13,true
+RCPT-HOS-202504-14,2025-06-06,customer_receipt,3750.00,HOS-202504-14,true
+RCPT-HOS-202504-21,2025-06-13,customer_receipt,10000.00,HOS-202504-21,true
+RCPT-HOS-202504-22,2025-06-13,customer_receipt,6250.00,HOS-202504-22,true
+RCPT-HOS-202504-23,2025-06-13,customer_receipt,5000.00,HOS-202504-23,true
+RCPT-HOS-202504-24,2025-06-13,customer_receipt,3750.00,HOS-202504-24,true
+RCPT-HOS-202504-31,2025-06-20,customer_receipt,10000.00,HOS-202504-31,true
+RCPT-HOS-202504-32,2025-06-20,customer_receipt,6250.00,HOS-202504-32,true
+RCPT-HOS-202504-33,2025-06-20,customer_receipt,5000.00,HOS-202504-33,true
+RCPT-HOS-202504-34,2025-06-20,customer_receipt,3750.00,HOS-202504-34,true
+RCPT-HOS-202504-41,2025-06-27,customer_receipt,10000.00,HOS-202504-41,true
+RCPT-HOS-202504-42,2025-06-27,customer_receipt,6250.00,HOS-202504-42,true
+RCPT-HOS-202504-43,2025-06-27,customer_receipt,5000.00,HOS-202504-43,true
+RCPT-HOS-202504-44,2025-06-27,customer_receipt,3750.00,HOS-202504-44,true
+RCPT-HOS-202505-11,2025-07-06,customer_receipt,10000.00,HOS-202505-11,true
+RCPT-HOS-202505-12,2025-07-06,customer_receipt,6250.00,HOS-202505-12,true
+RCPT-HOS-202505-13,2025-07-06,customer_receipt,5000.00,HOS-202505-13,true
+RCPT-HOS-202505-14,2025-07-06,customer_receipt,3750.00,HOS-202505-14,true
+RCPT-HOS-202505-21,2025-07-13,customer_receipt,10000.00,HOS-202505-21,true
+RCPT-HOS-202505-22,2025-07-13,customer_receipt,6250.00,HOS-202505-22,true
+RCPT-HOS-202505-23,2025-07-13,customer_receipt,5000.00,HOS-202505-23,true
+RCPT-HOS-202505-24,2025-07-13,customer_receipt,3750.00,HOS-202505-24,true
+RCPT-HOS-202505-31,2025-07-20,customer_receipt,10000.00,HOS-202505-31,true
+RCPT-HOS-202505-32,2025-07-20,customer_receipt,6250.00,HOS-202505-32,true
+RCPT-HOS-202505-33,2025-07-20,customer_receipt,5000.00,HOS-202505-33,true
+RCPT-HOS-202505-34,2025-07-20,customer_receipt,3750.00,HOS-202505-34,true
+RCPT-HOS-202505-41,2025-07-27,customer_receipt,10000.00,HOS-202505-41,true
+RCPT-HOS-202505-42,2025-07-27,customer_receipt,6250.00,HOS-202505-42,true
+RCPT-HOS-202505-43,2025-07-27,customer_receipt,5000.00,HOS-202505-43,true
+RCPT-HOS-202505-44,2025-07-27,customer_receipt,3750.00,HOS-202505-44,true
+RCPT-HOS-202506-11,2025-08-06,customer_receipt,10000.00,HOS-202506-11,true
+RCPT-HOS-202506-12,2025-08-06,customer_receipt,6250.00,HOS-202506-12,true
+RCPT-HOS-202506-13,2025-08-06,customer_receipt,5000.00,HOS-202506-13,true
+RCPT-HOS-202506-14,2025-08-06,customer_receipt,3750.00,HOS-202506-14,true
+RCPT-HOS-202506-21,2025-08-13,customer_receipt,10000.00,HOS-202506-21,true
+RCPT-HOS-202506-22,2025-08-13,customer_receipt,6250.00,HOS-202506-22,true
+RCPT-HOS-202506-23,2025-08-13,customer_receipt,5000.00,HOS-202506-23,true
+RCPT-HOS-202506-24,2025-08-13,customer_receipt,3750.00,HOS-202506-24,true
+RCPT-HOS-202506-31,2025-08-20,customer_receipt,10000.00,HOS-202506-31,true
+RCPT-HOS-202506-32,2025-08-20,customer_receipt,6250.00,HOS-202506-32,true
+RCPT-HOS-202506-33,2025-08-20,customer_receipt,5000.00,HOS-202506-33,true
+RCPT-HOS-202506-34,2025-08-20,customer_receipt,3750.00,HOS-202506-34,true
+RCPT-HOS-202506-41,2025-08-27,customer_receipt,10000.00,HOS-202506-41,true
+RCPT-HOS-202506-42,2025-08-27,customer_receipt,6250.00,HOS-202506-42,true
+RCPT-HOS-202506-43,2025-08-27,customer_receipt,5000.00,HOS-202506-43,true
+RCPT-HOS-202506-44,2025-08-27,customer_receipt,3750.00,HOS-202506-44,true
+RCPT-HOS-202507-11,2025-09-05,customer_receipt,10000.00,HOS-202507-11,true
+RCPT-HOS-202507-12,2025-09-05,customer_receipt,6250.00,HOS-202507-12,true
+RCPT-HOS-202507-13,2025-09-05,customer_receipt,5000.00,HOS-202507-13,true
+RCPT-HOS-202507-14,2025-09-05,customer_receipt,3750.00,HOS-202507-14,true
+RCPT-HOS-202507-21,2025-09-12,customer_receipt,10000.00,HOS-202507-21,true
+RCPT-HOS-202507-22,2025-09-12,customer_receipt,6250.00,HOS-202507-22,true
+RCPT-HOS-202507-23,2025-09-12,customer_receipt,5000.00,HOS-202507-23,true
+RCPT-HOS-202507-24,2025-09-12,customer_receipt,3750.00,HOS-202507-24,true
+RCPT-HOS-202507-31,2025-09-19,customer_receipt,10000.00,HOS-202507-31,true
+RCPT-HOS-202507-32,2025-09-19,customer_receipt,6250.00,HOS-202507-32,true
+RCPT-HOS-202507-33,2025-09-19,customer_receipt,5000.00,HOS-202507-33,true
+RCPT-HOS-202507-34,2025-09-19,customer_receipt,3750.00,HOS-202507-34,true
+RCPT-HOS-202507-41,2025-09-26,customer_receipt,10000.00,HOS-202507-41,true
+RCPT-HOS-202507-42,2025-09-26,customer_receipt,6250.00,HOS-202507-42,true
+RCPT-HOS-202507-43,2025-09-26,customer_receipt,5000.00,HOS-202507-43,true
+RCPT-HOS-202507-44,2025-09-26,customer_receipt,3750.00,HOS-202507-44,true
+RCPT-HOS-202508-11,2025-10-06,customer_receipt,10000.00,HOS-202508-11,true
+RCPT-HOS-202508-12,2025-10-06,customer_receipt,6250.00,HOS-202508-12,true
+RCPT-HOS-202508-13,2025-10-06,customer_receipt,5000.00,HOS-202508-13,true
+RCPT-HOS-202508-14,2025-10-06,customer_receipt,3750.00,HOS-202508-14,true
+RCPT-HOS-202508-21,2025-10-13,customer_receipt,10000.00,HOS-202508-21,true
+RCPT-HOS-202508-22,2025-10-13,customer_receipt,6250.00,HOS-202508-22,true
+RCPT-HOS-202508-23,2025-10-13,customer_receipt,5000.00,HOS-202508-23,true
+RCPT-HOS-202508-24,2025-10-13,customer_receipt,3750.00,HOS-202508-24,true
+RCPT-HOS-202508-31,2025-10-20,customer_receipt,10000.00,HOS-202508-31,true
+RCPT-HOS-202508-32,2025-10-20,customer_receipt,6250.00,HOS-202508-32,true
+RCPT-HOS-202508-33,2025-10-20,customer_receipt,5000.00,HOS-202508-33,true
+RCPT-HOS-202508-34,2025-10-20,customer_receipt,3750.00,HOS-202508-34,true
+RCPT-HOS-202508-41,2025-10-27,customer_receipt,10000.00,HOS-202508-41,true
+RCPT-HOS-202508-42,2025-10-27,customer_receipt,6250.00,HOS-202508-42,true
+RCPT-HOS-202508-43,2025-10-27,customer_receipt,5000.00,HOS-202508-43,true
+RCPT-HOS-202508-44,2025-10-27,customer_receipt,3750.00,HOS-202508-44,true
+RCPT-HOS-202509-11,2025-11-06,customer_receipt,10000.00,HOS-202509-11,true
+RCPT-HOS-202509-12,2025-11-06,customer_receipt,6250.00,HOS-202509-12,true
+RCPT-HOS-202509-13,2025-11-06,customer_receipt,5000.00,HOS-202509-13,true
+RCPT-HOS-202509-14,2025-11-06,customer_receipt,3750.00,HOS-202509-14,true
+RCPT-HOS-202509-21,2025-11-13,customer_receipt,10000.00,HOS-202509-21,true
+RCPT-HOS-202509-22,2025-11-13,customer_receipt,6250.00,HOS-202509-22,true
+RCPT-HOS-202509-23,2025-11-13,customer_receipt,5000.00,HOS-202509-23,true
+RCPT-HOS-202509-24,2025-11-13,customer_receipt,3750.00,HOS-202509-24,true
+RCPT-HOS-202509-31,2025-11-20,customer_receipt,10000.00,HOS-202509-31,true
+RCPT-HOS-202509-32,2025-11-20,customer_receipt,6250.00,HOS-202509-32,true
+RCPT-HOS-202509-33,2025-11-20,customer_receipt,5000.00,HOS-202509-33,true
+RCPT-HOS-202509-34,2025-11-20,customer_receipt,3750.00,HOS-202509-34,true
+RCPT-HOS-202509-41,2025-11-27,customer_receipt,10000.00,HOS-202509-41,true
+RCPT-HOS-202509-42,2025-11-27,customer_receipt,6250.00,HOS-202509-42,true
+RCPT-HOS-202509-43,2025-11-27,customer_receipt,5000.00,HOS-202509-43,true
+RCPT-HOS-202509-44,2025-11-27,customer_receipt,3750.00,HOS-202509-44,true
+RCPT-HOS-202510-11,2025-12-06,customer_receipt,10000.00,HOS-202510-11,true
+RCPT-HOS-202510-12,2025-12-06,customer_receipt,6250.00,HOS-202510-12,true
+RCPT-HOS-202510-13,2025-12-06,customer_receipt,5000.00,HOS-202510-13,true
+RCPT-HOS-202510-14,2025-12-06,customer_receipt,3750.00,HOS-202510-14,true
+RCPT-HOS-202510-21,2025-12-13,customer_receipt,10000.00,HOS-202510-21,true
+RCPT-HOS-202510-22,2025-12-13,customer_receipt,6250.00,HOS-202510-22,true
+RCPT-HOS-202510-23,2025-12-13,customer_receipt,5000.00,HOS-202510-23,true
+RCPT-HOS-202510-24,2025-12-13,customer_receipt,3750.00,HOS-202510-24,true
+RCPT-HOS-202510-31,2025-12-20,customer_receipt,10000.00,HOS-202510-31,true
+RCPT-HOS-202510-32,2025-12-20,customer_receipt,6250.00,HOS-202510-32,true
+RCPT-HOS-202510-33,2025-12-20,customer_receipt,5000.00,HOS-202510-33,true
+RCPT-HOS-202510-34,2025-12-20,customer_receipt,3750.00,HOS-202510-34,true
+RCPT-HOS-202510-41,2025-12-27,customer_receipt,10000.00,HOS-202510-41,true
+RCPT-HOS-202510-42,2025-12-27,customer_receipt,6250.00,HOS-202510-42,true
+RCPT-HOS-202510-43,2025-12-27,customer_receipt,5000.00,HOS-202510-43,true
+RCPT-HOS-202510-44,2025-12-27,customer_receipt,3750.00,HOS-202510-44,true
+PAY-BILL-202412-1,2025-01-06,supplier_payment,-16250.00,BILL-202412-1,true
+PAY-BILL-202412-2,2025-01-13,supplier_payment,-16250.00,BILL-202412-2,true
+PAY-BILL-202412-3,2025-01-20,supplier_payment,-16250.00,BILL-202412-3,true
+PAY-BILL-202412-4,2025-01-27,supplier_payment,-16250.00,BILL-202412-4,true
+PAY-BILL-202501-1,2025-02-06,supplier_payment,-16250.00,BILL-202501-1,true
+PAY-BILL-202501-2,2025-02-13,supplier_payment,-16250.00,BILL-202501-2,true
+PAY-BILL-202501-3,2025-02-20,supplier_payment,-16250.00,BILL-202501-3,true
+PAY-BILL-202501-4,2025-02-27,supplier_payment,-16250.00,BILL-202501-4,true
+PAY-BILL-202502-1,2025-03-09,supplier_payment,-16250.00,BILL-202502-1,true
+PAY-BILL-202502-2,2025-03-16,supplier_payment,-16250.00,BILL-202502-2,true
+PAY-BILL-202502-3,2025-03-23,supplier_payment,-16250.00,BILL-202502-3,true
+PAY-BILL-202502-4,2025-03-30,supplier_payment,-16250.00,BILL-202502-4,true
+PAY-BILL-202503-1,2025-04-06,supplier_payment,-16250.00,BILL-202503-1,true
+PAY-BILL-202503-2,2025-04-13,supplier_payment,-16250.00,BILL-202503-2,true
+PAY-BILL-202503-3,2025-04-20,supplier_payment,-16250.00,BILL-202503-3,true
+PAY-BILL-202503-4,2025-04-27,supplier_payment,-16250.00,BILL-202503-4,true
+PAY-BILL-202504-1,2025-05-07,supplier_payment,-16250.00,BILL-202504-1,true
+PAY-BILL-202504-2,2025-05-14,supplier_payment,-16250.00,BILL-202504-2,true
+PAY-BILL-202504-3,2025-05-21,supplier_payment,-16250.00,BILL-202504-3,true
+PAY-BILL-202504-4,2025-05-28,supplier_payment,-16250.00,BILL-202504-4,true
+PAY-BILL-202505-1,2025-06-06,supplier_payment,-16250.00,BILL-202505-1,true
+PAY-BILL-202505-2,2025-06-13,supplier_payment,-16250.00,BILL-202505-2,true
+PAY-BILL-202505-3,2025-06-20,supplier_payment,-16250.00,BILL-202505-3,true
+PAY-BILL-202505-4,2025-06-27,supplier_payment,-16250.00,BILL-202505-4,true
+PAY-BILL-202506-1,2025-07-07,supplier_payment,-16250.00,BILL-202506-1,true
+PAY-BILL-202506-2,2025-07-14,supplier_payment,-16250.00,BILL-202506-2,true
+PAY-BILL-202506-3,2025-07-21,supplier_payment,-16250.00,BILL-202506-3,true
+PAY-BILL-202506-4,2025-07-28,supplier_payment,-16250.00,BILL-202506-4,true
+PAY-BILL-202507-1,2025-08-06,supplier_payment,-16250.00,BILL-202507-1,true
+PAY-BILL-202507-2,2025-08-13,supplier_payment,-16250.00,BILL-202507-2,true
+PAY-BILL-202507-3,2025-08-20,supplier_payment,-16250.00,BILL-202507-3,true
+PAY-BILL-202507-4,2025-08-27,supplier_payment,-16250.00,BILL-202507-4,true
+PAY-BILL-202508-1,2025-09-06,supplier_payment,-16250.00,BILL-202508-1,true
+PAY-BILL-202508-2,2025-09-13,supplier_payment,-16250.00,BILL-202508-2,true
+PAY-BILL-202508-3,2025-09-20,supplier_payment,-16250.00,BILL-202508-3,true
+PAY-BILL-202508-4,2025-09-27,supplier_payment,-16250.00,BILL-202508-4,true
+PAY-BILL-202509-1,2025-10-07,supplier_payment,-16250.00,BILL-202509-1,true
+PAY-BILL-202509-2,2025-10-14,supplier_payment,-16250.00,BILL-202509-2,true
+PAY-BILL-202509-3,2025-10-21,supplier_payment,-16250.00,BILL-202509-3,true
+PAY-BILL-202509-4,2025-10-28,supplier_payment,-16250.00,BILL-202509-4,true
+PAY-BILL-202510-1,2025-11-06,supplier_payment,-16250.00,BILL-202510-1,true
+PAY-BILL-202510-2,2025-11-13,supplier_payment,-16250.00,BILL-202510-2,true
+PAY-BILL-202510-3,2025-11-20,supplier_payment,-16250.00,BILL-202510-3,true
+PAY-BILL-202510-4,2025-11-27,supplier_payment,-16250.00,BILL-202510-4,true
+PAY-BILL-202511-1,2025-12-07,supplier_payment,-16250.00,BILL-202511-1,true
+PAY-BILL-202511-2,2025-12-14,supplier_payment,-16250.00,BILL-202511-2,true
+PAY-BILL-202511-3,2025-12-21,supplier_payment,-16250.00,BILL-202511-3,true
+PAY-BILL-202511-4,2025-12-28,supplier_payment,-16250.00,BILL-202511-4,true
+payroll-202501,2025-01-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202501,2025-01-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202501,2025-01-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202501,2025-01-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202501,2025-01-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202501,2025-01-28,debt_principal,-2500.00,DEBT-202501,true
+debt_interest-202501,2025-01-28,debt_interest,-600.00,DEBT-202501,true
+payroll-202502,2025-02-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202502,2025-02-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202502,2025-02-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202502,2025-02-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202502,2025-02-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202502,2025-02-28,debt_principal,-2500.00,DEBT-202502,true
+debt_interest-202502,2025-02-28,debt_interest,-575.00,DEBT-202502,true
+payroll-202503,2025-03-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202503,2025-03-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202503,2025-03-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202503,2025-03-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202503,2025-03-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202503,2025-03-28,debt_principal,-2500.00,DEBT-202503,true
+debt_interest-202503,2025-03-28,debt_interest,-550.00,DEBT-202503,true
+payroll-202504,2025-04-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202504,2025-04-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202504,2025-04-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202504,2025-04-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202504,2025-04-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202504,2025-04-28,debt_principal,-2500.00,DEBT-202504,true
+debt_interest-202504,2025-04-28,debt_interest,-525.00,DEBT-202504,true
+payroll-202505,2025-05-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202505,2025-05-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202505,2025-05-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202505,2025-05-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202505,2025-05-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202505,2025-05-28,debt_principal,-2500.00,DEBT-202505,true
+debt_interest-202505,2025-05-28,debt_interest,-500.00,DEBT-202505,true
+payroll-202506,2025-06-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202506,2025-06-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202506,2025-06-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202506,2025-06-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202506,2025-06-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202506,2025-06-28,debt_principal,-2500.00,DEBT-202506,true
+debt_interest-202506,2025-06-28,debt_interest,-475.00,DEBT-202506,true
+payroll-202507,2025-07-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202507,2025-07-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202507,2025-07-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202507,2025-07-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202507,2025-07-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202507,2025-07-28,debt_principal,-2500.00,DEBT-202507,true
+debt_interest-202507,2025-07-28,debt_interest,-450.00,DEBT-202507,true
+payroll-202508,2025-08-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202508,2025-08-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202508,2025-08-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202508,2025-08-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202508,2025-08-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202508,2025-08-28,debt_principal,-2500.00,DEBT-202508,true
+debt_interest-202508,2025-08-28,debt_interest,-425.00,DEBT-202508,true
+payroll-202509,2025-09-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202509,2025-09-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202509,2025-09-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202509,2025-09-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202509,2025-09-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202509,2025-09-28,debt_principal,-2500.00,DEBT-202509,true
+debt_interest-202509,2025-09-28,debt_interest,-400.00,DEBT-202509,true
+payroll-202510,2025-10-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202510,2025-10-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202510,2025-10-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202510,2025-10-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202510,2025-10-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202510,2025-10-28,debt_principal,-2500.00,DEBT-202510,true
+debt_interest-202510,2025-10-28,debt_interest,-375.00,DEBT-202510,true
+payroll-202511,2025-11-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202511,2025-11-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202511,2025-11-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202511,2025-11-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202511,2025-11-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202511,2025-11-28,debt_principal,-2500.00,DEBT-202511,true
+debt_interest-202511,2025-11-28,debt_interest,-350.00,DEBT-202511,true
+payroll-202512,2025-12-28,payroll,-18000.00,Synthetic recurring operating cash flow,true
+operating_expense-202512,2025-12-28,operating_expense,-6000.00,Synthetic recurring operating cash flow,true
+cash_tax-202512,2025-12-28,cash_tax,-2000.00,Synthetic recurring operating cash flow,true
+maintenance_capex-202512,2025-12-28,maintenance_capex,-1000.00,Synthetic recurring operating cash flow,true
+distribution-202512,2025-12-28,distribution,-1000.00,Synthetic recurring operating cash flow,true
+debt_principal-202512,2025-12-28,debt_principal,-2500.00,DEBT-202512,true
+debt_interest-202512,2025-12-28,debt_interest,-325.00,DEBT-202512,true
+TRANSFER-IN,2025-06-15,internal_transfer,5000.00,transfer-pair-1,true
+TRANSFER-OUT,2025-06-15,internal_transfer,-5000.00,transfer-pair-1,true

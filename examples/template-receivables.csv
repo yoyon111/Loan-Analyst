@@ -1,0 +1,1 @@
+invoice_id,customer,invoice_date,due_date,amount,paid_amount,last_payment_date,as_of,synthetic
