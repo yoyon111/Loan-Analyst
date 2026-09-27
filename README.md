@@ -1,5 +1,7 @@
+http://10.0.0.48:3000
+
 # InvestOffice
-http://127.0.0.1:3000
+
 A commercial lending workspace for a fictional community bank. Built with **Next.js + TypeScript, FastAPI + Python, and PostgreSQL**, with a no-Docker SQLite development option. All Harbor data is synthetic. No AI credentials, paid services, or cloud accounts are required.
 
 The completed first milestone follows one case from CSV intake through analysis, stress testing, an editable memo, independent review, and subsequent-period monitoring. The application supports human judgment. It does not score applicants, estimate default probabilities, automatically approve credit, or disburse funds.
