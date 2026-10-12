@@ -38,6 +38,7 @@ from .db import (
     IndividualCase,
     IndividualPayment,
     IndividualReport,
+    IndividualEstimate,
     records,
     event,
 )
@@ -45,6 +46,7 @@ from .seed import seed, write_examples, HEADERS, record_key
 from .intake import validate
 from .finance import analysis, forecast, q
 from .individual_report_pdf import render_individual_report
+from .individual_estimate import estimate_loan, input_values
 
 USERS = {
     "analyst": {"id": "analyst", "name": "Alex Morgan", "role": "analyst"},
@@ -1070,7 +1072,8 @@ def due_after_months(first_due: date, count: int):
 
 def individual_detail(db, c):
     payments = individual_payments(db, c.id)
-    app_data = c.application
+    app_data = {"current_housing_payment": "0.00", **c.application}
+    assessment = db.query(IndividualEstimate).filter_by(case_id=c.id).order_by(IndividualEstimate.created_at.desc()).first()
     loan = Decimal(app_data["requested_loan"])
     balance = Decimal(payments[-1].balance) if payments else loan
     due = (
@@ -1088,6 +1091,12 @@ def individual_detail(db, c):
     return dict(
         id=c.id, owner_id=c.owner_id, application=app_data, checklist=c.checklist,
         status=c.status, review_comment=c.review_comment, version=c.version,
+        preliminary_estimate=(
+            dict(id=assessment.id, created_at=assessment.created_at,
+                 assumptions=assessment.assumptions, result=assessment.result,
+                 stale=assessment.input_values != input_values(app_data))
+            if assessment else None
+        ),
         servicing={
             "mode": "originated",
             "annual_rate": app_data["annual_rate"],
@@ -1182,7 +1191,7 @@ def create_individual_case(body: NewIndividualCase, db=Depends(database), u=Depe
         property_address="", purchase_price="0.00", requested_loan=q(body.requested_loan),
         down_payment="0.00", down_payment_source="", annual_income="0.00",
         employer="", employment_notes="", liquid_assets="0.00", reserves="0.00",
-        monthly_debt="0.00", expected_monthly_rent="0.00",
+        monthly_debt="0.00", current_housing_payment="0.00", expected_monthly_rent="0.00",
         property_tax_annual="0.00", insurance_annual="0.00", hoa_monthly="0.00",
         annual_rate="0.00", term_months=360, first_due_date="",
         credit_authorized=False, notes="", rental_property=True,
@@ -1205,7 +1214,7 @@ def create_individual_practice(body: NewIndividualCase, db=Depends(database), u=
         requested_loan=q(body.requested_loan), down_payment="0.00",
         down_payment_source="", annual_income="0.00", employer="",
         employment_notes="", liquid_assets="0.00", reserves="0.00",
-        monthly_debt="0.00", expected_monthly_rent="0.00",
+        monthly_debt="0.00", current_housing_payment="0.00", expected_monthly_rent="0.00",
         property_tax_annual="0.00", insurance_annual="0.00", hoa_monthly="0.00",
         annual_rate="0.00", term_months=360, first_due_date="",
         credit_authorized=False, notes="", rental_property=True,
@@ -1222,6 +1231,35 @@ def create_individual_practice(body: NewIndividualCase, db=Depends(database), u=
 @app.get("/api/individual-cases/{id}")
 def get_individual_case(id: str, db=Depends(database), u=Depends(user)):
     return individual_detail(db, individual_case(db, id))
+
+
+class IndividualEstimateInput(BaseModel):
+    version: int
+    max_dti_percent: Decimal = Field(gt=0, le=100)
+    max_ltv_percent: Decimal = Field(gt=0, le=100)
+    closing_cost_percent: Decimal = Field(ge=0, le=20)
+
+
+@app.post("/api/individual-cases/{id}/estimate")
+def run_individual_estimate(id: str, body: IndividualEstimateInput, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.version != body.version:
+        raise HTTPException(409, "Case changed. Reload before estimating.")
+    assumptions = {
+        "max_dti_percent": str(body.max_dti_percent),
+        "max_ltv_percent": str(body.max_ltv_percent),
+        "closing_cost_percent": str(body.closing_cost_percent),
+    }
+    application = {"current_housing_payment": "0.00", **c.application}
+    assessment = IndividualEstimate(
+        id=uid(), case_id=id, assumptions=assumptions,
+        input_values=input_values(application),
+        result=estimate_loan(application, assumptions),
+    )
+    db.add(assessment)
+    db.commit()
+    return individual_detail(db, c)["preliminary_estimate"]
 
 
 class IndividualChecklistItem(BaseModel):
@@ -1245,6 +1283,7 @@ class IndividualApplicationInput(BaseModel):
     liquid_assets: Decimal = Field(ge=0, le=100000000)
     reserves: Decimal = Field(ge=0, le=100000000)
     monthly_debt: Decimal = Field(ge=0, le=100000000)
+    current_housing_payment: Decimal = Field(default=Decimal("0"), ge=0, le=100000000)
     expected_monthly_rent: Decimal = Field(ge=0, le=100000000)
     property_tax_annual: Decimal = Field(ge=0, le=100000000)
     insurance_annual: Decimal = Field(ge=0, le=100000000)

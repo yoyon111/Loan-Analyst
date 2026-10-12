@@ -535,3 +535,64 @@ def test_saved_individual_reports_keep_prior_payment_history(client):
     assert earlier["servicing"]["balance"] == "120000.00"
     assert D(later["servicing"]["balance"]) < D("120000")
     assert cl.get(path + "/reports/missing").status_code == 404
+
+
+def test_individual_practice_estimate_excludes_rent_and_tracks_stale_inputs(client):
+    cl, _ = client
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "yonathan"})
+    created = cl.post("/api/individual-cases/practice", json={
+        "applicant_name": "Rental scenario", "requested_loan": "200000",
+    }).json()
+    path = "/api/individual-cases/" + created["id"]
+    case = cl.get(path).json()
+    missing = cl.post(path + "/estimate", json={
+        "version": case["version"], "max_dti_percent": "40",
+        "max_ltv_percent": "80", "closing_cost_percent": "3",
+    })
+    assert missing.status_code == 200, missing.text
+    assert missing.json()["result"]["status"] == "needs_information"
+    assert "Annual income" in missing.json()["result"]["missing"]
+
+    application = {
+        **case["application"], "version": case["version"], "checklist": case["checklist"],
+        "annual_income": "120000", "monthly_debt": "500", "current_housing_payment": "1200",
+        "liquid_assets": "80000", "reserves": "10000", "purchase_price": "250000",
+        "annual_rate": "6", "term_months": 360,
+        "property_tax_annual": "4000", "insurance_annual": "2000",
+        "expected_monthly_rent": "999999",
+    }
+    saved = cl.put(path, json=application)
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["preliminary_estimate"]["stale"] is True
+    case = saved.json()
+    estimate = cl.post(path + "/estimate", json={
+        "version": case["version"], "max_dti_percent": "40",
+        "max_ltv_percent": "80", "closing_cost_percent": "3",
+    })
+    assert estimate.status_code == 200, estimate.text
+    result = estimate.json()["result"]
+    assert result["status"] == "within_assumptions"
+    assert result["rent_counted"] is False
+    assert result["illustrative_max_loan"] == "200000.00"
+    assert result["requested_ltv_percent"] == "80.00"
+    assert result["estimated_closing_costs"] == "7500.00"
+    assert result["cash_required_for_requested_loan"] == "67500.00"
+    assert estimate.json()["stale"] is False
+
+    report = cl.post(path + "/reports", json={"title": "Estimate included", "version": case["version"]})
+    assert report.status_code == 200, report.text
+    snapshot = cl.get(path + "/reports/" + report.json()["id"]).json()["snapshot"]
+    assert snapshot["preliminary_estimate"]["result"]["status"] == "within_assumptions"
+    assert cl.get(path + "/reports/" + report.json()["id"] + "/pdf").content.startswith(b"%PDF")
+
+    updated = cl.put(path, json={**case["application"], "version": case["version"],
+                                 "checklist": case["checklist"], "annual_income": "60000"})
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["preliminary_estimate"]["stale"] is True
+    lower = cl.post(path + "/estimate", json={
+        "version": updated.json()["version"], "max_dti_percent": "40",
+        "max_ltv_percent": "80", "closing_cost_percent": "3",
+    }).json()["result"]
+    assert lower["status"] == "outside_assumptions"
+    assert any("debt" in reason.lower() for reason in lower["reasons"])

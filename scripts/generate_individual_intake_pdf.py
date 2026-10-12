@@ -110,8 +110,8 @@ def build():
     y = heading(pdf, "2  Income, employment, assets, and debts", y)
     y = pair(pdf, ("annual_income", "Annual income ($)"), ("employer", "Employer / business"), y)
     y = pair(pdf, ("liquid_assets", "Bank and investment assets ($)"), ("reserves", "Savings after purchase ($)"), y)
-    field(pdf, "monthly_debt", "Existing monthly debt payments ($)", 44, y, 250)
-    y -= 52
+    y = pair(pdf, ("monthly_debt", "Other monthly debts, excl. housing ($)"),
+             ("current_housing_payment", "Current housing payment ($)"), y)
     y = heading(pdf, "3  Property costs, if known", y)
     field(pdf, "property_tax_annual", "Annual property tax ($)", 44, y, 160)
     field(pdf, "insurance_annual", "Annual property insurance ($)", 226, y, 160)

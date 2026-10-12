@@ -16,6 +16,7 @@ type Application = {
   down_payment_source: string; annual_income: string; employer: string;
   employment_notes: string; liquid_assets: string; reserves: string;
   monthly_debt: string; expected_monthly_rent: string;
+  current_housing_payment: string;
   property_tax_annual: string; insurance_annual: string; hoa_monthly: string;
   annual_rate: string; term_months: number; first_due_date: string;
   credit_authorized: boolean; rental_property: boolean; notes: string;
@@ -27,13 +28,30 @@ type Payment = {
 type IndividualCase = {
   id: string; application: Application; checklist: ChecklistItem[];
   status: string; review_comment: string; version: number;
+  preliminary_estimate: PracticeEstimate | null;
   servicing: { mode: "originated"; annual_rate: string; balance: string;
     scheduled_principal_interest: string; full_payment_due: string;
     monthly_escrow: string; next_due_date: string | null; payments: Payment[] };
 };
+type PracticeEstimate = {
+  id: string; created_at: string; stale: boolean;
+  assumptions: { max_dti_percent: string; max_ltv_percent: string; closing_cost_percent: string };
+  result: {
+    status: "needs_information" | "outside_assumptions" | "within_assumptions";
+    missing: string[]; reasons: string[]; warnings: string[];
+    gross_monthly_income: string; existing_monthly_debts_including_housing: string;
+    property_costs_monthly: string; maximum_housing_payment: string;
+    debt_based_max_loan: string; ltv_based_max_loan: string;
+    illustrative_max_loan: string | null; requested_principal_interest: string;
+    requested_total_housing_payment: string; requested_dti_percent: string | null;
+    requested_ltv_percent: string | null; estimated_closing_costs: string;
+    cash_required_for_requested_loan: string; cash_available: string;
+    reserves_held_back: string; rent_counted: false;
+  };
+};
 type CaseSummary = { id: string; applicant_name: string; property_address: string; mode: string; status: string };
 type SavedReport = { id: string; title: string; created_at: string; status: string; payments_count: number };
-type Section = "application" | "documents" | "review" | "servicing" | "reports";
+type Section = "application" | "documents" | "estimate" | "review" | "servicing" | "reports";
 
 const checklistLabels: Record<string, { title: string; help: string }> = {
   identity: { title: "Identity and Social Security number", help: "Mark verification status only. Do not enter ID numbers here." },
@@ -57,7 +75,8 @@ const moneyFields: { key: keyof Application; label: string }[] = [
   { key: "annual_income", label: "Annual income" },
   { key: "liquid_assets", label: "Bank and investment assets" },
   { key: "reserves", label: "Savings after purchase" },
-  { key: "monthly_debt", label: "Existing monthly debt payments" },
+  { key: "monthly_debt", label: "Other monthly debts (excluding housing)" },
+  { key: "current_housing_payment", label: "Current monthly housing payment" },
   { key: "expected_monthly_rent", label: "Expected monthly rent" },
   { key: "property_tax_annual", label: "Annual property tax" },
   { key: "insurance_annual", label: "Annual property insurance" },
@@ -86,6 +105,9 @@ export default function IndividualPage() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [reports, setReports] = useState<SavedReport[]>([]);
   const [reportTitle, setReportTitle] = useState("Workflow report");
+  const [estimateAssumptions, setEstimateAssumptions] = useState({
+    max_dti_percent: "40", max_ltv_percent: "80", closing_cost_percent: "3",
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -100,6 +122,9 @@ export default function IndividualPage() {
     const savedReports = await api<SavedReport[]>(`/individual-cases/${id}/reports`);
     setSelected(detail); setDraft(detail); setDirty(false);
     setReports(savedReports); setReportTitle(`${detail.application.applicant_name} - workflow report`);
+    setEstimateAssumptions(detail.preliminary_estimate?.assumptions || {
+      max_dti_percent: "40", max_ltv_percent: "80", closing_cost_percent: "3",
+    });
     setSection(detail.application.mode === "self_practice" && detail.status === "active" ? "servicing" : "application");
     return detail;
   }, []);
@@ -183,6 +208,16 @@ export default function IndividualPage() {
       setReports(await api<SavedReport[]>(`/individual-cases/${selected.id}/reports`));
     }, "Report snapshot saved. You can reopen or download it later.");
   }
+  async function runEstimate() {
+    if (!selected || dirty) return;
+    await run(async () => {
+      const assessment = await api<PracticeEstimate>(`/individual-cases/${selected.id}/estimate`, {
+        method: "POST", body: JSON.stringify({ version: selected.version, ...estimateAssumptions }),
+      });
+      setSelected(prev => prev ? { ...prev, preliminary_estimate: assessment } : prev);
+      setDraft(prev => prev ? { ...prev, preliminary_estimate: assessment } : prev);
+    }, "Practice estimate saved with this case.");
+  }
   const editable = user?.role === "analyst" && (selected?.status === "draft" || selected?.status === "changes_requested");
   const verifiedCount = draft?.checklist.filter(item => item.status === "verified" || item.status === "not_required").length ?? 0;
   const monthlyDue = selected?.servicing.full_payment_due || "";
@@ -236,7 +271,7 @@ export default function IndividualPage() {
               <span className={styles.status}>{statusLabel[selected.status]}</span>
             </div>
             <nav className={styles.tabs} aria-label="Individual loan workflow">
-              {((draft.application.mode === "self_practice" ? [["application", "Worksheet & terms", ClipboardList], ["documents", "Documents", FileText], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]] : [["application", "Application", ClipboardList], ["documents", "Documents", FileText], ["review", "Review", CheckCircle2], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]]) as [Section, string, typeof Wallet][]).map(([key, label, Icon]) =>
+              {((draft.application.mode === "self_practice" ? [["application", "Worksheet & terms", ClipboardList], ["documents", "Documents", FileText], ["estimate", "Estimate", CheckCircle2], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]] : [["application", "Application", ClipboardList], ["documents", "Documents", FileText], ["estimate", "Estimate", CheckCircle2], ["review", "Review", CheckCircle2], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]]) as [Section, string, typeof Wallet][]).map(([key, label, Icon]) =>
                 <button key={key} className={section === key ? styles.activeTab : ""} onClick={() => setSection(key)}><Icon size={17} /> {label}</button>)}
             </nav>
             {section === "application" && <div className={styles.panel}>
@@ -271,6 +306,35 @@ export default function IndividualPage() {
                 </select>
               </div>)}</div>
               {editable && <div className={styles.actions}><button disabled={busy || !dirty} onClick={save}><Save size={17} /> Save checklist</button></div>}
+            </div>}
+            {section === "estimate" && <div className={styles.panel}>
+              <h2>Step 3: illustrative loan amount</h2>
+              <p>Enter income, debts, current housing payment, savings, a target purchase price, property costs, and hypothetical loan terms under Worksheet & terms. This calculation does not count expected rent.</p>
+              <div className={styles.estimateInputs}>
+                <label>Practice debt-to-income limit (%)<input type="number" min="1" max="100" step="0.1" value={estimateAssumptions.max_dti_percent} onChange={e => setEstimateAssumptions({ ...estimateAssumptions, max_dti_percent: e.target.value })} /></label>
+                <label>Practice loan-to-value limit (%)<input type="number" min="1" max="100" step="0.1" value={estimateAssumptions.max_ltv_percent} onChange={e => setEstimateAssumptions({ ...estimateAssumptions, max_ltv_percent: e.target.value })} /></label>
+                <label>Estimated closing costs (% of price)<input type="number" min="0" max="20" step="0.1" value={estimateAssumptions.closing_cost_percent} onChange={e => setEstimateAssumptions({ ...estimateAssumptions, closing_cost_percent: e.target.value })} /></label>
+              </div>
+              <p className={styles.hint}>These editable percentages are exercise assumptions, not any lender&apos;s rules. Savings after purchase is treated as a reserve amount held back from closing.</p>
+              {user.role === "analyst" && <div className={styles.actions}><button disabled={busy || dirty || !estimateAssumptions.max_dti_percent || !estimateAssumptions.max_ltv_percent || !estimateAssumptions.closing_cost_percent} onClick={runEstimate}>Calculate practice estimate</button>{dirty && <small>Save worksheet changes first.</small>}</div>}
+              <h2 className={styles.estimateHeading}>Step 4: practice preliminary result</h2>
+              {!selected.preliminary_estimate ? <p>Run the estimate to see a conditional practice result.</p> : <>
+                {selected.preliminary_estimate.stale && <div className={styles.error}>Worksheet figures changed after this estimate. Recalculate before using it in a report.</div>}
+                <div className={styles.notice}><strong>{selected.preliminary_estimate.result.status === "within_assumptions" ? "Fits these practice assumptions" : selected.preliminary_estimate.result.status === "outside_assumptions" ? "Outside these practice assumptions" : "More information needed"}</strong> · Saved {new Date(selected.preliminary_estimate.created_at).toLocaleString()}</div>
+                <div className={styles.summary}>
+                  <div><span>Illustrative maximum at target price</span><strong>{selected.preliminary_estimate.result.illustrative_max_loan ? cents(selected.preliminary_estimate.result.illustrative_max_loan) : "Not available"}</strong></div>
+                  <div><span>Debt-based loan ceiling</span><strong>{cents(selected.preliminary_estimate.result.debt_based_max_loan)}</strong></div>
+                  <div><span>Proposed monthly housing payment</span><strong>{cents(selected.preliminary_estimate.result.requested_total_housing_payment)}</strong></div>
+                  <div><span>Cash needed incl. closing + reserves</span><strong>{cents(selected.preliminary_estimate.result.cash_required_for_requested_loan)}</strong></div>
+                  <div><span>Available cash</span><strong>{cents(selected.preliminary_estimate.result.cash_available)}</strong></div>
+                  <div><span>Proposed debt-to-income</span><strong>{selected.preliminary_estimate.result.requested_dti_percent ? `${selected.preliminary_estimate.result.requested_dti_percent}%` : "Unknown"}</strong></div>
+                  <div><span>Proposed loan-to-value</span><strong>{selected.preliminary_estimate.result.requested_ltv_percent ? `${selected.preliminary_estimate.result.requested_ltv_percent}%` : "Unknown"}</strong></div>
+                </div>
+                {selected.preliminary_estimate.result.missing.length > 0 && <div className={styles.estimateNotes}><strong>Enter to complete the estimate</strong><ul>{selected.preliminary_estimate.result.missing.map(item => <li key={item}>{item}</li>)}</ul></div>}
+                {selected.preliminary_estimate.result.reasons.length > 0 && <div className={styles.estimateNotes}><strong>Why this request falls outside the assumptions</strong><ul>{selected.preliminary_estimate.result.reasons.map(item => <li key={item}>{item}</li>)}</ul></div>}
+                <div className={styles.estimateNotes}><strong>What remains unchecked</strong><ul>{selected.preliminary_estimate.result.warnings.map(item => <li key={item}>{item}</li>)}</ul></div>
+              </>}
+              <p className={styles.hint}>This is an educational scenario result, not a preapproval, loan offer, credit decision, or lender commitment. A real lender must verify finances, credit, property, and program eligibility. <a href="https://www.consumerfinance.gov/owning-a-home/explore/get-a-preapproval-letter/" target="_blank" rel="noreferrer">What real preapproval means</a>.</p>
             </div>}
             {section === "review" && <div className={styles.panel}>
               <h2>Case review</h2>

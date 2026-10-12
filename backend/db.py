@@ -85,6 +85,16 @@ class IndividualReport(Base):
     created_at = Column(String, default=now, nullable=False)
 
 
+class IndividualEstimate(Base):
+    __tablename__ = "individual_estimates"
+    id = Column(String, primary_key=True)
+    case_id = Column(String, ForeignKey("individual_cases.id"), nullable=False, index=True)
+    assumptions = Column(JSON, nullable=False)
+    input_values = Column(JSON, nullable=False)
+    result = Column(JSON, nullable=False)
+    created_at = Column(String, default=now, nullable=False)
+
+
 class ImportBatch(Base):
     __tablename__ = "imports"
     id = Column(String, primary_key=True)

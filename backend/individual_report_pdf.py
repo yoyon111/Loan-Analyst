@@ -88,7 +88,8 @@ def render_individual_report(report):
         ("Employment details", application["employment_notes"]),
         ("Bank and investment assets", dollars(application["liquid_assets"])),
         ("Savings after purchase", dollars(application["reserves"])),
-        ("Existing monthly debts", dollars(application["monthly_debt"])),
+        ("Other monthly debts", dollars(application["monthly_debt"])),
+        ("Current housing payment", dollars(application.get("current_housing_payment", "0"))),
         ("Expected monthly rent", dollars(application["expected_monthly_rent"])),
         ("Annual property tax", dollars(application["property_tax_annual"])),
         ("Annual insurance", dollars(application["insurance_annual"])),
@@ -96,6 +97,31 @@ def render_individual_report(report):
         ("Credit authorization recorded", "Yes" if application["credit_authorized"] else "No"),
         ("Case notes", application["notes"]),
     ])
+    estimate = snapshot.get("preliminary_estimate")
+    if estimate:
+        result = estimate["result"]
+        status_labels = {
+            "within_assumptions": "Fits practice assumptions",
+            "outside_assumptions": "Outside practice assumptions",
+            "needs_information": "More information needed",
+        }
+        section("Illustrative preliminary result", [
+            ("Result", status_labels.get(result["status"], result["status"])),
+            ("Current for saved worksheet", "No - inputs changed" if estimate["stale"] else "Yes"),
+            ("Practice DTI limit", f"{estimate['assumptions']['max_dti_percent']}%"),
+            ("Practice LTV limit", f"{estimate['assumptions']['max_ltv_percent']}%"),
+            ("Assumed closing costs", f"{estimate['assumptions']['closing_cost_percent']}% of price"),
+            ("Illustrative maximum loan", dollars(result["illustrative_max_loan"]) if result["illustrative_max_loan"] else "Not available"),
+            ("Proposed monthly housing", dollars(result["requested_total_housing_payment"])),
+            ("Proposed DTI", f"{result['requested_dti_percent']}%" if result["requested_dti_percent"] else "Unknown"),
+            ("Proposed LTV", f"{result['requested_ltv_percent']}%" if result["requested_ltv_percent"] else "Unknown"),
+            ("Cash needed incl. closing + reserves", dollars(result["cash_required_for_requested_loan"])),
+            ("Cash available", dollars(result["cash_available"])),
+            ("Missing information", "; ".join(result["missing"]) or "None in this exercise"),
+            ("Outside-assumption reasons", "; ".join(result["reasons"]) or "None in this exercise"),
+            ("Unchecked items", "; ".join(result["warnings"])),
+        ])
+        story.append(Paragraph("This estimate is not a real preapproval, loan offer, or credit decision.", cell))
     story.append(Paragraph("Document checklist", styles["ReportHeading"]))
     checklist = snapshot["checklist"]
     if checklist:
