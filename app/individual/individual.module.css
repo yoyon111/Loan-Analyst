@@ -1,0 +1,79 @@
+.shell { min-height: 100vh; background: #f3f5f4; color: #203238; font-family: Arial, Helvetica, sans-serif; }
+.topbar { min-height: 74px; padding: 16px 30px; background: #12363c; color: #fff; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand { display: flex; align-items: center; gap: 10px; font-size: 22px; font-weight: 800; letter-spacing: -.04em; }
+.brand span { margin-left: 10px; padding-left: 16px; border-left: 1px solid #94aeb1; color: #c9e0df; font-size: 14px; font-weight: 500; letter-spacing: 0; }
+.topActions { display: flex; align-items: center; gap: 22px; font-size: 13px; }
+.topActions a { color: #d1e6e4; text-decoration: none; }
+.topActions button { padding: 8px; border: 1px solid #789399; border-radius: 8px; background: transparent; color: #fff; cursor: pointer; }
+.layout { display: grid; grid-template-columns: 292px minmax(0, 1fr); min-height: calc(100vh - 74px); }
+.sidebar { padding: 30px 18px; background: #e7eeeb; border-right: 1px solid #d2dfd9; }
+.eyebrow { margin: 0 0 15px; color: #52716e; font-size: 11px; font-weight: 800; letter-spacing: .14em; }
+.caseButton, .selectedCase { width: 100%; margin-bottom: 8px; padding: 14px; display: grid; gap: 6px; text-align: left; border: 1px solid transparent; border-radius: 11px; background: transparent; color: #254149; cursor: pointer; }
+.selectedCase { border-color: #b7d6ce; background: #fff; box-shadow: 0 2px 7px #183c3a0d; }
+.caseButton strong, .selectedCase strong { font-size: 14px; }
+.caseButton small, .selectedCase small { overflow: hidden; color: #627b79; text-overflow: ellipsis; white-space: nowrap; }
+.caseButton span, .selectedCase span { font-size: 11px; font-weight: 700; color: #197667; }
+.newCase { margin-top: 25px; padding: 17px; border-radius: 12px; background: #fff; display: grid; gap: 12px; }
+.newCase h3 { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 15px; }
+.safety { margin: 22px 5px; color: #657c79; font-size: 12px; line-height: 1.5; }
+.content { padding: 34px min(4vw, 60px); max-width: 1370px; width: 100%; margin: 0 auto; }
+.hero { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 24px; }
+.hero h1 { margin: 0 0 7px; font-size: 34px; letter-spacing: -.04em; }
+.hero p:last-child { margin: 0; color: #647b7e; }
+.status { padding: 9px 14px; border-radius: 50px; background: #dcece5; color: #176f55; font-size: 12px; font-weight: 800; white-space: nowrap; }
+.tabs { display: flex; flex-direction: row; gap: 4px; border-bottom: 1px solid #d2dfdc; margin-bottom: 24px; overflow-x: auto; }
+.tabs button { display: flex; align-items: center; gap: 7px; padding: 13px 19px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #5d7676; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.tabs .activeTab { color: #086e61; border-bottom-color: #08796b; }
+.panel { padding: 26px; border: 1px solid #dfe8e5; border-radius: 16px; background: #fff; box-shadow: 0 4px 16px #1c444308; }
+.panel h2 { margin: 0 0 8px; font-size: 22px; letter-spacing: -.025em; }
+.panel > p, .panelHead p { margin: 0 0 22px; color: #60777b; line-height: 1.5; }
+.panelHead { display: flex; justify-content: space-between; }
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.grid .wide { grid-column: span 2; }
+.panel fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.panel label, .newCase label, .paymentForm label { display: grid; gap: 7px; color: #39575b; font-size: 12px; font-weight: 700; }
+.panel input, .panel textarea, .panel select, .newCase input { width: 100%; padding: 11px 12px; border: 1px solid #cbd9d7; border-radius: 8px; background: #fff; color: #213a3e; font: inherit; font-size: 14px; }
+.panel textarea { resize: vertical; }
+.panel input:focus, .panel textarea:focus, .panel select:focus, .newCase input:focus { outline: 2px solid #4ca58b; outline-offset: 1px; }
+.panel .check { display: flex; align-items: center; gap: 10px; margin-top: 24px; font-size: 13px; }
+.check input { width: auto; }
+.hint { margin: 9px 0 18px; color: #6a8080; font-size: 12px; line-height: 1.5; }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.actions button, .newCase button, .paymentForm button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 17px; border: 1px solid #087364; border-radius: 9px; background: #087364; color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; }
+.actions .secondary { border-color: #9ebcb3; background: #fff; color: #156d5f; }
+.actions button:disabled, .newCase button:disabled, .paymentForm button:disabled { opacity: .5; cursor: not-allowed; }
+.actions small { color: #7a7770; }
+.documentList { display: grid; }
+.documentRow { display: grid; grid-template-columns: 30px minmax(0, 1fr) 150px; align-items: start; gap: 16px; padding: 18px 0; border-bottom: 1px solid #e7eeeb; }
+.documentNumber { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #e7f2ed; color: #1b7668; font-size: 12px; font-weight: 800; }
+.documentRow strong { font-size: 14px; }
+.documentRow p { margin: 5px 0 10px; color: #667c7e; font-size: 12px; }
+.documentRow input { max-width: 560px; }
+.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 22px 0; }
+.summary div { padding: 17px; border: 1px solid #e0eae7; border-radius: 10px; background: #f7faf8; display: grid; gap: 8px; }
+.summary span { color: #668080; font-size: 11px; font-weight: 700; }
+.summary strong { font-size: 17px; }
+.reviewBox { margin-top: 28px; padding-top: 20px; border-top: 1px solid #e3ebe7; }
+.reviewBox textarea { max-width: 720px; }
+.paymentForm { display: flex; gap: 14px; flex-wrap: wrap; align-items: end; margin: 22px 0; }
+.paymentForm label { min-width: 180px; }
+.tableWrap { overflow-x: auto; }
+.tableWrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tableWrap th, .tableWrap td { padding: 11px; border-bottom: 1px solid #e4ece9; text-align: right; white-space: nowrap; }
+.tableWrap th:first-child, .tableWrap td:first-child { text-align: left; }
+.tableWrap th { color: #637c7c; }
+.error, .notice { margin: 0 0 18px; padding: 12px 15px; border-radius: 9px; background: #fce8e5; color: #8b2c22; font-size: 13px; }
+.notice { background: #e4f3e9; color: #1c6650; }
+.empty { display: grid; justify-items: center; padding: 90px 20px; text-align: center; color: #60777b; }
+.empty h1 { color: #243b40; }
+.signin { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: linear-gradient(125deg, #12363c, #0e665a); color: #243c41; }
+.signinCard { width: min(100%, 520px); padding: 38px; border-radius: 18px; background: #fff; box-shadow: 0 25px 70px #06272755; }
+.signinCard .brand { color: #126458; }
+.signinCard .brand span { color: #6d8583; border-color: #afc4c0; }
+.signinCard h1 { margin: 28px 0 10px; font-size: 30px; line-height: 1.15; letter-spacing: -.04em; }
+.signinCard p { line-height: 1.6; color: #627c7b; }
+.signinCard .actions { display: grid; }
+.signinCard a { display: inline-block; margin-top: 24px; color: #126b5e; font-size: 13px; }
+@media (max-width: 1000px) { .layout { grid-template-columns: 235px minmax(0, 1fr); } .grid, .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .topbar { padding: 15px; flex-wrap: wrap; } .topActions { flex-wrap: wrap; gap: 12px; } .layout { display: block; } .sidebar { border-right: 0; border-bottom: 1px solid #d2dfd9; padding: 16px; } .sidebar .caseButton, .sidebar .selectedCase { display: inline-grid; width: min(220px, 100%); margin-right: 8px; } .content { padding: 25px 16px; } .hero h1 { font-size: 27px; } .panel { padding: 20px 16px; } .documentRow { grid-template-columns: 26px minmax(0, 1fr); } .documentRow select { grid-column: 2; } }
+@media (max-width: 480px) { .grid, .summary { grid-template-columns: 1fr; } .grid .wide { grid-column: auto; } .brand { font-size: 18px; } .brand span { font-size: 11px; } .status { font-size: 10px; } }

@@ -392,3 +392,101 @@ def test_mismatched_aging_does_not_generate_false_dso(client):
     a = cl.get("/api/cases/harbor/analysis").json()
     assert a["dso"] is None and a["reconciliation"]
     assert cl.post("/api/cases/harbor/scenarios", json={}).status_code == 422
+
+
+def test_individual_rental_case_review_and_payment(client):
+    cl, _ = client
+    created = cl.post(
+        "/api/individual-cases",
+        json={"applicant_name": "Jamie Example", "requested_loan": "200000"},
+    )
+    assert created.status_code == 200, created.text
+    path = "/api/individual-cases/" + created.json()["id"]
+    case = cl.get(path).json()
+    assert case["application"]["rental_property"] is True
+    assert len(case["checklist"]) == 13
+    assert "ssn" not in case["application"]
+
+    application = {
+        **case["application"],
+        "property_address": "123 Fictional Lane",
+        "purchase_price": "250000",
+        "annual_rate": "6",
+        "first_due_date": "2026-12-01",
+        "credit_authorized": True,
+    }
+    saved = cl.put(path, json={**application, "checklist": case["checklist"], "version": case["version"]})
+    assert saved.status_code == 200, saved.text
+    case = saved.json()
+    assert cl.post(path + "/submit", json={"version": case["version"]}).status_code == 200
+    assert cl.post(path + "/review", json={"version": case["version"], "decision": "approved", "comment": "Looks complete"}).status_code == 403
+
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "reviewer"})
+    case = cl.get(path).json()
+    incomplete = cl.post(path + "/review", json={"version": case["version"], "decision": "approved", "comment": "Looks complete"})
+    assert incomplete.status_code == 422
+    changed = cl.post(path + "/review", json={"version": case["version"], "decision": "changes_requested", "comment": "Verify the documents"})
+    assert changed.status_code == 200
+
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "analyst"})
+    case = cl.get(path).json()
+    checklist = [{**item, "status": "verified"} for item in case["checklist"]]
+    saved = cl.put(path, json={**case["application"], "checklist": checklist, "version": case["version"]})
+    assert saved.status_code == 200, saved.text
+    case = saved.json()
+    assert cl.post(path + "/submit", json={"version": case["version"]}).status_code == 200
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "reviewer"})
+    case = cl.get(path).json()
+    approved = cl.post(path + "/review", json={"version": case["version"], "decision": "approved", "comment": "Verified in simulation"})
+    assert approved.status_code == 200, approved.text
+
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "analyst"})
+    case = cl.get(path).json()
+    activated = cl.post(path + "/activate", json={"version": case["version"]})
+    assert activated.status_code == 200, activated.text
+    case = activated.json()
+    assert case["servicing"]["balance"] == "200000.00"
+    assert case["servicing"]["next_due_date"] == "2026-12-01"
+    too_small = cl.post(path + "/payments", json={"version": case["version"], "effective_date": "2026-12-01", "amount": "1"})
+    assert too_small.status_code == 422
+    posted = cl.post(path + "/payments", json={"version": case["version"], "effective_date": "2026-12-01", "amount": "1500"})
+    assert posted.status_code == 200, posted.text
+    payment = posted.json()["servicing"]["payments"][0]
+    assert D(payment["interest"]) + D(payment["escrow"]) + D(payment["principal"]) == D("1500")
+    assert D(payment["balance"]) < D("200000")
+    assert posted.json()["servicing"]["next_due_date"] == "2027-01-01"
+
+
+def test_yonathan_can_practice_worksheet_to_servicing_alone(client):
+    cl, _ = client
+    cl.post("/api/auth/logout")
+    assert cl.post("/api/auth/login", json={"identity": "yonathan"}).json()["name"] == "Yonathan"
+    created = cl.post("/api/individual-cases/practice", json={
+        "applicant_name": "Rental loan practice", "requested_loan": "200000",
+    })
+    assert created.status_code == 200, created.text
+    path = "/api/individual-cases/" + created.json()["id"]
+    case = cl.get(path).json()
+    assert case["application"]["mode"] == "self_practice"
+    assert cl.post(path + "/practice-activate", json={"version": case["version"]}).status_code == 422
+    saved = cl.put(path, json={
+        **case["application"], "version": case["version"], "checklist": case["checklist"],
+        "annual_rate": "6", "first_due_date": "2026-11-01",
+    })
+    assert saved.status_code == 200, saved.text
+    case = saved.json()
+    assert case["application"]["mode"] == "self_practice"
+    active = cl.post(path + "/practice-activate", json={"version": case["version"]})
+    assert active.status_code == 200, active.text
+    assert active.json()["status"] == "active"
+    assert active.json()["checklist"][0]["status"] == "needed"
+    due = active.json()["servicing"]["full_payment_due"]
+    posted = cl.post(path + "/payments", json={
+        "version": active.json()["version"], "effective_date": "2026-11-01", "amount": due,
+    })
+    assert posted.status_code == 200, posted.text
+    assert D(posted.json()["servicing"]["balance"]) < D("200000")

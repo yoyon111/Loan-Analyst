@@ -24,6 +24,16 @@ For PostgreSQL instead:
 powershell -ExecutionPolicy Bypass -File scripts/dev.ps1 -Postgres
 ```
 
+To let phones and computers on your **trusted private Wi-Fi** open the app, use `-Lan`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/dev.ps1 -Lan
+```
+
+The script prints the computer's Wi-Fi address. On another device connected to the same network, open `http://<printed-address>:3000`. Keep the development terminal open. If Windows Firewall prompts you, allow Node.js on **Private networks only**. If a phone cannot connect, check that both devices use the same non-guest Wi-Fi; guest networks often isolate devices. The API continues to listen on the computer's loopback interface. The Next.js development server trusts only the one private-network IP selected at startup.
+
+LAN mode is for a trusted home or lab network. The analyst and reviewer are selectable demo identities without real passwords, so anyone on that Wi-Fi can access the fictional demo application. Do not enable it on public Wi-Fi or a network you do not trust. The ordinary launcher remains local-only.
+
 The PostgreSQL container binds only to loopback and retains data in a named volume. Its credentials are intentionally public **local-demo defaults**, not production secrets. Stop it with `docker compose stop db`.
 
 ### Manual setup (all platforms)
@@ -55,7 +65,13 @@ Open [InvestOffice](http://127.0.0.1:3000). Interactive backend API documentatio
 
 For a local production build, run `npm run build` and `npm start` while FastAPI is running. This is still a **local demo**, not a production banking deployment.
 
-## Walk through the flagship demo
+## Individual rental-property practice
+
+Open [Individual lending](http://127.0.0.1:3000/individual) and continue as **Yonathan**. Download the [fillable one-page borrower worksheet](http://127.0.0.1:3000/individual-rental-loan-intake.pdf) for practice. Choose **Start from borrower worksheet**, create a practice loan, and manually enter the worksheet answers under **Worksheet & terms**; PDF import is not implemented. Save the proposed interest rate and first payment due date, then select **Start servicing practice**. Post full monthly payments in the **Servicing** tab and inspect the principal, interest, and simple tax/insurance escrow allocation. The 13-item **Documents** checklist is optional practice. No second person or reviewer sign-in is required for this individual path. The payment history and remaining principal persist in the same local database.
+
+This is a practice workflow. It records identity and credit-authorization **status** but does not store Social Security numbers, ID images, credit reports, or source-document files. It does not perform a credit check, issue a real approval, disburse a loan, manage escrow disbursements, or handle partial payments and delinquency. Use fictional information only, especially in optional LAN mode with demo identities.
+
+## Walk through the flagship business demo
 
 1. Choose **Alex Morgan**, the analyst. Harbor opens with monthly reports, bank transactions, payables, and debt already persisted. Receivables intentionally await intake.
 2. Open **Financial intake**. Download the example CSV and upload it, or choose **Use Harbor sample** with Receivables selected. Review the first eight rows and validation results, then **Commit 224 records**. Both paths use the same multipart-upload API.

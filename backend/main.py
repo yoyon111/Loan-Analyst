@@ -1,6 +1,8 @@
 import hashlib
 import os
 import secrets
+import ipaddress
+import calendar
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone, date
 from decimal import Decimal
@@ -33,6 +35,8 @@ from .db import (
     Alert,
     Event,
     LoginSession,
+    IndividualCase,
+    IndividualPayment,
     records,
     event,
 )
@@ -43,6 +47,7 @@ from .finance import analysis, forecast, q
 USERS = {
     "analyst": {"id": "analyst", "name": "Alex Morgan", "role": "analyst"},
     "reviewer": {"id": "reviewer", "name": "Jordan Lee", "role": "reviewer"},
+    "yonathan": {"id": "yonathan", "name": "Yonathan", "role": "analyst"},
 }
 
 
@@ -70,11 +75,22 @@ app = FastAPI(title="InvestOffice", version="1.0.0", lifespan=lifespan)
 async def local_security(request, call_next):
     # Browser writes require a same-site local origin. Cookies are HttpOnly and SameSite strict.
     origin = request.headers.get("origin")
+    allowed_origins = {
+        "http://127.0.0.1:3000",
+        "http://localhost:3000",
+        "http://testserver",
+    }
+    lan_ip = os.getenv("LAN_IP", "").strip()
+    try:
+        parsed_ip = ipaddress.ip_address(lan_ip)
+        if parsed_ip.version == 4 and parsed_ip.is_private:
+            allowed_origins.add(f"http://{parsed_ip}:3000")
+    except ValueError:
+        pass
     if (
         request.method not in ("GET", "HEAD", "OPTIONS")
         and origin
-        and origin
-        not in ("http://127.0.0.1:3000", "http://localhost:3000", "http://testserver")
+        and origin not in allowed_origins
     ):
         from fastapi.responses import JSONResponse
 
@@ -140,7 +156,7 @@ class LoginInput(BaseModel):
 @app.post("/api/auth/login")
 def login(body: LoginInput, response: Response, request: Request, db=Depends(database)):
     if body.identity not in USERS:
-        raise HTTPException(400, "Choose analyst or reviewer.")
+        raise HTTPException(400, "Choose a demo identity.")
     old = request.cookies.get("investoffice_session", "")
     if old:
         db.query(LoginSession).filter_by(
@@ -1014,3 +1030,316 @@ def update_alert(
     event(db, id, u["id"], "Alert updated", {"alert_id": aid, **body.model_dump()})
     db.commit()
     return {"ok": True}
+
+
+# Individual rental-property cases are separate from the commercial analysis model.
+# This local practice flow deliberately stores no SSNs, ID images, or credit reports.
+INDIVIDUAL_CHECKLIST = (
+    "identity", "application", "income", "employment", "assets",
+    "funds_source", "reserves", "debts", "credit_permission", "purchase",
+    "appraisal", "rent", "property_costs",
+)
+
+
+def individual_case(db, id):
+    c = db.get(IndividualCase, id)
+    if not c:
+        raise HTTPException(404, "Individual case not found.")
+    return c
+
+
+def individual_payments(db, id):
+    return db.query(IndividualPayment).filter_by(case_id=id).order_by(IndividualPayment.due_date).all()
+
+
+def monthly_payment(balance: Decimal, annual_rate: Decimal, months: int):
+    rate = annual_rate / Decimal("1200")
+    if rate == 0:
+        return Decimal(q(balance / months))
+    return Decimal(q(balance * rate / (1 - (1 + rate) ** -months)))
+
+
+def due_after_months(first_due: date, count: int):
+    offset = first_due.year * 12 + first_due.month - 1 + count
+    year, zero_based_month = divmod(offset, 12)
+    month = zero_based_month + 1
+    return date(year, month, min(first_due.day, calendar.monthrange(year, month)[1]))
+
+
+def individual_detail(db, c):
+    payments = individual_payments(db, c.id)
+    app_data = c.application
+    loan = Decimal(app_data["requested_loan"])
+    balance = Decimal(payments[-1].balance) if payments else loan
+    due = (
+        due_after_months(date.fromisoformat(app_data["first_due_date"]), len(payments))
+        if app_data["first_due_date"] and balance > 0 else None
+    )
+    escrow = (Decimal(app_data["property_tax_annual"]) + Decimal(app_data["insurance_annual"])) / 12
+    scheduled_pi = monthly_payment(loan, Decimal(app_data["annual_rate"]), app_data["term_months"]) if loan > 0 else Decimal("0")
+    next_interest = Decimal(q(balance * Decimal(app_data["annual_rate"]) / 1200))
+    next_principal = (
+        balance if len(payments) + 1 >= app_data["term_months"]
+        else min(balance, max(Decimal("0"), scheduled_pi - next_interest))
+    )
+    full_payment_due = next_interest + next_principal + Decimal(q(escrow)) if balance > 0 else Decimal("0")
+    return dict(
+        id=c.id, owner_id=c.owner_id, application=app_data, checklist=c.checklist,
+        status=c.status, review_comment=c.review_comment, version=c.version,
+        servicing={
+            "mode": "originated",
+            "annual_rate": app_data["annual_rate"],
+            "balance": q(balance), "scheduled_principal_interest": q(scheduled_pi),
+            "monthly_escrow": q(escrow), "full_payment_due": q(full_payment_due),
+            "next_due_date": due.isoformat() if due else None,
+            "payments": [
+                dict(id=p.id, due_date=p.due_date, effective_date=p.effective_date,
+                     amount=p.amount, interest=p.interest, escrow=p.escrow,
+                     principal=p.principal, balance=p.balance)
+                for p in payments
+            ],
+        },
+    )
+
+
+class NewIndividualCase(BaseModel):
+    applicant_name: str = Field(min_length=2, max_length=120)
+    requested_loan: Decimal = Field(gt=0, le=100000000)
+
+
+@app.get("/api/individual-cases")
+def list_individual_cases(db=Depends(database), u=Depends(user)):
+    return [dict(id=c.id, applicant_name=c.application["applicant_name"],
+                 property_address=c.application["property_address"],
+                 mode=c.application.get("mode", "application"), status=c.status)
+            for c in db.query(IndividualCase).order_by(IndividualCase.id).all()]
+
+
+@app.post("/api/individual-cases")
+def create_individual_case(body: NewIndividualCase, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    application = dict(
+        applicant_name=body.applicant_name.strip(), co_applicant_name="",
+        property_address="", purchase_price="0.00", requested_loan=q(body.requested_loan),
+        down_payment="0.00", down_payment_source="", annual_income="0.00",
+        employer="", employment_notes="", liquid_assets="0.00", reserves="0.00",
+        monthly_debt="0.00", expected_monthly_rent="0.00",
+        property_tax_annual="0.00", insurance_annual="0.00", hoa_monthly="0.00",
+        annual_rate="0.00", term_months=360, first_due_date="",
+        credit_authorized=False, notes="", rental_property=True,
+    )
+    c = IndividualCase(
+        id=uid(), owner_id=u["id"], application=application,
+        checklist=[dict(key=key, status="needed", note="") for key in INDIVIDUAL_CHECKLIST],
+    )
+    db.add(c)
+    db.commit()
+    return {"id": c.id}
+
+
+@app.post("/api/individual-cases/practice")
+def create_individual_practice(body: NewIndividualCase, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    application = dict(
+        mode="self_practice", applicant_name=body.applicant_name.strip(),
+        co_applicant_name="", property_address="", purchase_price="0.00",
+        requested_loan=q(body.requested_loan), down_payment="0.00",
+        down_payment_source="", annual_income="0.00", employer="",
+        employment_notes="", liquid_assets="0.00", reserves="0.00",
+        monthly_debt="0.00", expected_monthly_rent="0.00",
+        property_tax_annual="0.00", insurance_annual="0.00", hoa_monthly="0.00",
+        annual_rate="0.00", term_months=360, first_due_date="",
+        credit_authorized=False, notes="", rental_property=True,
+    )
+    c = IndividualCase(
+        id=uid(), owner_id=u["id"], application=application,
+        checklist=[dict(key=key, status="needed", note="") for key in INDIVIDUAL_CHECKLIST],
+    )
+    db.add(c)
+    db.commit()
+    return {"id": c.id}
+
+
+@app.get("/api/individual-cases/{id}")
+def get_individual_case(id: str, db=Depends(database), u=Depends(user)):
+    return individual_detail(db, individual_case(db, id))
+
+
+class IndividualChecklistItem(BaseModel):
+    key: str
+    status: str
+    note: str = Field(default="", max_length=500)
+
+
+class IndividualApplicationInput(BaseModel):
+    version: int
+    applicant_name: str = Field(min_length=2, max_length=120)
+    co_applicant_name: str = Field(default="", max_length=120)
+    property_address: str = Field(default="", max_length=250)
+    purchase_price: Decimal = Field(ge=0, le=100000000)
+    requested_loan: Decimal = Field(gt=0, le=100000000)
+    down_payment: Decimal = Field(ge=0, le=100000000)
+    down_payment_source: str = Field(default="", max_length=500)
+    annual_income: Decimal = Field(ge=0, le=100000000)
+    employer: str = Field(default="", max_length=200)
+    employment_notes: str = Field(default="", max_length=1000)
+    liquid_assets: Decimal = Field(ge=0, le=100000000)
+    reserves: Decimal = Field(ge=0, le=100000000)
+    monthly_debt: Decimal = Field(ge=0, le=100000000)
+    expected_monthly_rent: Decimal = Field(ge=0, le=100000000)
+    property_tax_annual: Decimal = Field(ge=0, le=100000000)
+    insurance_annual: Decimal = Field(ge=0, le=100000000)
+    hoa_monthly: Decimal = Field(ge=0, le=100000000)
+    annual_rate: Decimal = Field(ge=0, le=30)
+    term_months: int = Field(ge=12, le=480)
+    first_due_date: str = ""
+    credit_authorized: bool = False
+    rental_property: bool = True
+    notes: str = Field(default="", max_length=3000)
+    checklist: list[IndividualChecklistItem]
+
+
+@app.put("/api/individual-cases/{id}")
+def save_individual_case(id: str, body: IndividualApplicationInput, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.status not in ("draft", "changes_requested"):
+        raise HTTPException(409, "This case is locked during review or servicing.")
+    if body.version != c.version:
+        raise HTTPException(409, "Case changed. Reload before saving.")
+    if body.first_due_date:
+        try:
+            date.fromisoformat(body.first_due_date)
+        except ValueError:
+            raise HTTPException(422, "Enter a valid first payment due date.")
+    if body.purchase_price and body.requested_loan > body.purchase_price:
+        raise HTTPException(422, "Requested loan cannot exceed the purchase price in this practice flow.")
+    if body.purchase_price and body.down_payment > body.purchase_price:
+        raise HTTPException(422, "Down payment cannot exceed the purchase price.")
+    keys = [item.key for item in body.checklist]
+    if len(keys) != len(INDIVIDUAL_CHECKLIST) or set(keys) != set(INDIVIDUAL_CHECKLIST):
+        raise HTTPException(422, "The document checklist must contain every item exactly once.")
+    if any(item.status not in ("needed", "received", "verified", "not_required") for item in body.checklist):
+        raise HTTPException(422, "Choose a valid checklist status.")
+    if not body.rental_property:
+        raise HTTPException(422, "This practice flow is for rental-property loans.")
+    c.application = {**body.model_dump(mode="json", exclude={"version", "checklist"}),
+                     **({"mode": "self_practice"} if c.application.get("mode") == "self_practice" else {})}
+    c.checklist = [item.model_dump() for item in body.checklist]
+    db.commit()
+    return individual_detail(db, c)
+
+
+class IndividualVersion(BaseModel):
+    version: int
+
+
+@app.post("/api/individual-cases/{id}/submit")
+def submit_individual_case(id: str, body: IndividualVersion, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.status not in ("draft", "changes_requested") or c.version != body.version:
+        raise HTTPException(409, "Reload the editable case before submitting.")
+    a = c.application
+    if not a["property_address"].strip() or Decimal(a["purchase_price"]) <= 0:
+        raise HTTPException(422, "Enter the property address and purchase price before review.")
+    c.status = "in_review"
+    db.commit()
+    return individual_detail(db, c)
+
+
+class IndividualReviewInput(BaseModel):
+    version: int
+    decision: str
+    comment: str = Field(min_length=3, max_length=3000)
+
+
+@app.post("/api/individual-cases/{id}/review")
+def review_individual_case(id: str, body: IndividualReviewInput, db=Depends(database), u=Depends(user)):
+    if u["role"] != "reviewer":
+        raise HTTPException(403, "Only the reviewer can record a decision.")
+    c = individual_case(db, id)
+    if c.status != "in_review" or c.version != body.version:
+        raise HTTPException(409, "Reload the submitted case before reviewing.")
+    if body.decision not in ("approved", "changes_requested"):
+        raise HTTPException(422, "Choose approve or request changes.")
+    if body.decision == "approved":
+        incomplete = [item["key"] for item in c.checklist if item["status"] not in ("verified", "not_required")]
+        required_verified = {"identity", "application", "credit_permission"}
+        if (incomplete or not c.application["credit_authorized"] or
+                any(item["key"] in required_verified and item["status"] != "verified" for item in c.checklist) or
+                not c.application["first_due_date"]):
+            raise HTTPException(422, "Complete the checklist, verify identity, application and credit permission, and enter the first payment due date before simulated approval.")
+    c.status = body.decision
+    c.review_comment = body.comment
+    db.commit()
+    return individual_detail(db, c)
+
+
+@app.post("/api/individual-cases/{id}/activate")
+def activate_individual_case(id: str, body: IndividualVersion, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.status != "approved" or c.version != body.version:
+        raise HTTPException(409, "Only a current approved case can enter servicing.")
+    a = c.application
+    if not a["first_due_date"] or Decimal(a["annual_rate"]) < 0:
+        raise HTTPException(422, "Set the first payment due date and loan terms before servicing.")
+    c.status = "active"
+    db.commit()
+    return individual_detail(db, c)
+
+
+@app.post("/api/individual-cases/{id}/practice-activate")
+def activate_individual_practice(id: str, body: IndividualVersion, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.application.get("mode") != "self_practice" or c.status != "draft" or c.version != body.version:
+        raise HTTPException(409, "Reload the practice case before starting servicing.")
+    a = c.application
+    if not a["first_due_date"] or Decimal(a["requested_loan"]) <= 0:
+        raise HTTPException(422, "Enter the loan amount and first payment due date before servicing.")
+    c.status = "active"
+    db.commit()
+    return individual_detail(db, c)
+
+
+class IndividualPaymentInput(BaseModel):
+    version: int
+    effective_date: date
+    amount: Decimal = Field(gt=0, le=100000000)
+
+
+@app.post("/api/individual-cases/{id}/payments")
+def post_individual_payment(id: str, body: IndividualPaymentInput, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.status != "active" or c.version != body.version:
+        raise HTTPException(409, "Reload the active loan before posting a payment.")
+    detail = individual_detail(db, c)
+    s = detail["servicing"]
+    balance = Decimal(s["balance"])
+    if balance <= 0:
+        raise HTTPException(409, "The loan is paid off.")
+    if s["payments"] and body.effective_date < date.fromisoformat(s["payments"][-1]["effective_date"]):
+        raise HTTPException(422, "Payment date cannot precede the previous posting.")
+    a = c.application
+    interest = Decimal(q(balance * Decimal(a["annual_rate"]) / 1200))
+    escrow = Decimal(s["monthly_escrow"])
+    minimum = Decimal(s["full_payment_due"])
+    amount = Decimal(q(body.amount))
+    if amount < minimum:
+        raise HTTPException(422, f"This practice ledger accepts full payments only. Minimum: ${q(minimum)}.")
+    principal = amount - interest - escrow
+    if principal > balance:
+        raise HTTPException(422, "Payment exceeds the remaining balance plus interest and escrow.")
+    new_balance = balance - principal
+    p = IndividualPayment(
+        id=uid(), case_id=id, due_date=s["next_due_date"],
+        effective_date=body.effective_date.isoformat(), amount=q(amount),
+        interest=q(interest), escrow=q(escrow), principal=q(principal),
+        balance=q(new_balance),
+    )
+    db.add(p)
+    db.commit()
+    return individual_detail(db, c)

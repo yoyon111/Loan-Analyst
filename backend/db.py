@@ -49,6 +49,33 @@ class Case(Base):
     __mapper_args__ = {"version_id_col": version}
 
 
+class IndividualCase(Base):
+    __tablename__ = "individual_cases"
+    id = Column(String, primary_key=True)
+    owner_id = Column(String, nullable=False)
+    application = Column(JSON, nullable=False)
+    checklist = Column(JSON, nullable=False)
+    status = Column(String, default="draft", nullable=False)
+    review_comment = Column(Text, default="", nullable=False)
+    version = Column(Integer, default=1, nullable=False)
+    __mapper_args__ = {"version_id_col": version}
+
+
+class IndividualPayment(Base):
+    __tablename__ = "individual_payments"
+    id = Column(String, primary_key=True)
+    case_id = Column(String, ForeignKey("individual_cases.id"), nullable=False, index=True)
+    due_date = Column(String, nullable=False)
+    effective_date = Column(String, nullable=False)
+    amount = Column(String, nullable=False)
+    interest = Column(String, nullable=False)
+    escrow = Column(String, nullable=False)
+    principal = Column(String, nullable=False)
+    balance = Column(String, nullable=False)
+    created_at = Column(String, default=now)
+    __table_args__ = (UniqueConstraint("case_id", "due_date"),)
+
+
 class ImportBatch(Base):
     __tablename__ = "imports"
     id = Column(String, primary_key=True)

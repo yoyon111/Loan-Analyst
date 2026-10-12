@@ -473,6 +473,9 @@ export default function Home() {
               No paid services or AI credentials required.
             </p>
           </div>
+          <a href="/individual" style={{ color: "#3f765d", fontSize: 13 }}>
+            Practice an individual rental-property loan →
+          </a>
         </section>
       </main>
     );
@@ -543,6 +546,9 @@ export default function Home() {
           <Plus size={16} /> New borrower case
         </button>
         <div className="sidebar-bottom">
+          <a className="help-button" href="/individual" style={{ textDecoration: "none" }}>
+            <UserRound size={17} /> Individual loan practice <ArrowUpRight size={15} />
+          </a>
           <div className="demo-card">
             <span className="demo-pulse" /> A safe place to practice
             <p>
