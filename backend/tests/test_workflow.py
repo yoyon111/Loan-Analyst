@@ -490,3 +490,48 @@ def test_yonathan_can_practice_worksheet_to_servicing_alone(client):
     })
     assert posted.status_code == 200, posted.text
     assert D(posted.json()["servicing"]["balance"]) < D("200000")
+
+
+def test_saved_individual_reports_keep_prior_payment_history(client):
+    cl, _ = client
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "yonathan"})
+    created = cl.post("/api/individual-cases/practice", json={
+        "applicant_name": "Practice borrower", "requested_loan": "120000",
+    }).json()
+    path = "/api/individual-cases/" + created["id"]
+    case = cl.get(path).json()
+    saved = cl.put(path, json={
+        **case["application"], "version": case["version"], "checklist": case["checklist"],
+        "annual_rate": "6", "first_due_date": "2026-11-01",
+        "notes": "Fictional walkthrough",
+    }).json()
+    active = cl.post(path + "/practice-activate", json={"version": saved["version"]}).json()
+    first = cl.post(path + "/reports", json={"title": "Before first payment", "version": active["version"]})
+    assert first.status_code == 200, first.text
+    first_id = first.json()["id"]
+    pdf = cl.get(path + "/reports/" + first_id + "/pdf")
+    assert pdf.status_code == 200, pdf.text
+    assert pdf.headers["content-type"] == "application/pdf"
+    assert pdf.content.startswith(b"%PDF")
+    assert len(pdf.content) > 1000
+    assert "attachment" in pdf.headers["content-disposition"]
+    assert "inline" in cl.get(path + "/reports/" + first_id + "/pdf?view=true").headers["content-disposition"]
+
+    paid = cl.post(path + "/payments", json={
+        "version": active["version"], "effective_date": "2026-11-01",
+        "amount": active["servicing"]["full_payment_due"],
+    }).json()
+    second = cl.post(path + "/reports", json={"title": "After first payment", "version": paid["version"]})
+    assert second.status_code == 200, second.text
+    reports = cl.get(path + "/reports").json()
+    assert len(reports) == 2
+    assert sorted(row["payments_count"] for row in reports) == [0, 1]
+    earlier = cl.get(path + "/reports/" + first_id).json()["snapshot"]
+    later = cl.get(path + "/reports/" + second.json()["id"]).json()["snapshot"]
+    assert earlier["application"]["notes"] == "Fictional walkthrough"
+    assert earlier["servicing"]["payments"] == []
+    assert len(later["servicing"]["payments"]) == 1
+    assert earlier["servicing"]["balance"] == "120000.00"
+    assert D(later["servicing"]["balance"]) < D("120000")
+    assert cl.get(path + "/reports/missing").status_code == 404

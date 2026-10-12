@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, ClipboardList, FileText, Home, Landmark, LogOut, Plus, Save, Wallet } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardList, Download, FileText, Home, Landmark, LogOut, Plus, Save, Wallet } from "lucide-react";
 import { api, money } from "@/lib/api";
 import styles from "./individual.module.css";
 
@@ -32,7 +32,8 @@ type IndividualCase = {
     monthly_escrow: string; next_due_date: string | null; payments: Payment[] };
 };
 type CaseSummary = { id: string; applicant_name: string; property_address: string; mode: string; status: string };
-type Section = "application" | "documents" | "review" | "servicing";
+type SavedReport = { id: string; title: string; created_at: string; status: string; payments_count: number };
+type Section = "application" | "documents" | "review" | "servicing" | "reports";
 
 const checklistLabels: Record<string, { title: string; help: string }> = {
   identity: { title: "Identity and Social Security number", help: "Mark verification status only. Do not enter ID numbers here." },
@@ -83,6 +84,8 @@ export default function IndividualPage() {
   const [reviewComment, setReviewComment] = useState("");
   const [paymentDate, setPaymentDate] = useState("");
   const [paymentAmount, setPaymentAmount] = useState("");
+  const [reports, setReports] = useState<SavedReport[]>([]);
+  const [reportTitle, setReportTitle] = useState("Workflow report");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -94,7 +97,9 @@ export default function IndividualPage() {
   }, []);
   const loadCase = useCallback(async (id: string) => {
     const detail = await api<IndividualCase>(`/individual-cases/${id}`);
+    const savedReports = await api<SavedReport[]>(`/individual-cases/${id}/reports`);
     setSelected(detail); setDraft(detail); setDirty(false);
+    setReports(savedReports); setReportTitle(`${detail.application.applicant_name} - workflow report`);
     setSection(detail.application.mode === "self_practice" && detail.status === "active" ? "servicing" : "application");
     return detail;
   }, []);
@@ -138,7 +143,7 @@ export default function IndividualPage() {
   async function logout() {
     await run(async () => {
       await api("/auth/logout", { method: "POST" });
-      setUser(null); setCases([]); setSelected(null); setDraft(null);
+      setUser(null); setCases([]); setSelected(null); setDraft(null); setReports([]);
     });
   }
   function change<K extends keyof Application>(key: K, value: Application[K]) {
@@ -168,6 +173,15 @@ export default function IndividualPage() {
       if (path === "submit") setSection("review");
       if (path === "activate" || path === "practice-activate") setSection("servicing");
     }, message);
+  }
+  async function saveReport() {
+    if (!selected || dirty) return;
+    await run(async () => {
+      await api(`/individual-cases/${selected.id}/reports`, {
+        method: "POST", body: JSON.stringify({ title: reportTitle, version: selected.version }),
+      });
+      setReports(await api<SavedReport[]>(`/individual-cases/${selected.id}/reports`));
+    }, "Report snapshot saved. You can reopen or download it later.");
   }
   const editable = user?.role === "analyst" && (selected?.status === "draft" || selected?.status === "changes_requested");
   const verifiedCount = draft?.checklist.filter(item => item.status === "verified" || item.status === "not_required").length ?? 0;
@@ -222,7 +236,7 @@ export default function IndividualPage() {
               <span className={styles.status}>{statusLabel[selected.status]}</span>
             </div>
             <nav className={styles.tabs} aria-label="Individual loan workflow">
-              {((draft.application.mode === "self_practice" ? [["application", "Worksheet & terms", ClipboardList], ["documents", "Documents", FileText], ["servicing", "Servicing", Wallet]] : [["application", "Application", ClipboardList], ["documents", "Documents", FileText], ["review", "Review", CheckCircle2], ["servicing", "Servicing", Wallet]]) as [Section, string, typeof Wallet][]).map(([key, label, Icon]) =>
+              {((draft.application.mode === "self_practice" ? [["application", "Worksheet & terms", ClipboardList], ["documents", "Documents", FileText], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]] : [["application", "Application", ClipboardList], ["documents", "Documents", FileText], ["review", "Review", CheckCircle2], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]]) as [Section, string, typeof Wallet][]).map(([key, label, Icon]) =>
                 <button key={key} className={section === key ? styles.activeTab : ""} onClick={() => setSection(key)}><Icon size={17} /> {label}</button>)}
             </nav>
             {section === "application" && <div className={styles.panel}>
@@ -296,6 +310,20 @@ export default function IndividualPage() {
                   {selected.servicing.payments.length ? selected.servicing.payments.map(p => <tr key={p.id}><td>{p.due_date}</td><td>{p.effective_date}</td><td>{cents(p.amount)}</td><td>{cents(p.interest)}</td><td>{cents(p.escrow)}</td><td>{cents(p.principal)}</td><td>{cents(p.balance)}</td></tr>) : <tr><td colSpan={7}>No payments posted yet.</td></tr>}
                 </tbody></table></div>
               </>}
+            </div>}
+            {section === "reports" && <div className={styles.panel}>
+              <h2>Saved workflow reports</h2>
+              <p>Save a snapshot of this case at any stage. Each report keeps the worksheet answers, loan terms, checklist, servicing figures, and payment history as they stood when saved.</p>
+              {user.role === "analyst" && <div className={styles.reportSave}>
+                <label>Report title<input maxLength={120} minLength={2} value={reportTitle} onChange={e => setReportTitle(e.target.value)} /></label>
+                <button disabled={busy || dirty || reportTitle.trim().length < 2} onClick={saveReport}><Save size={16} /> Save report</button>
+                {dirty && <small>Save your worksheet or checklist changes before saving a report.</small>}
+              </div>}
+              {reports.length ? <div className={styles.reportList}>{reports.map(report => <div className={styles.reportRow} key={report.id}>
+                <div><strong>{report.title}</strong><span>{new Date(report.created_at).toLocaleString()} · {statusLabel[report.status] || report.status} · {report.payments_count} payment{report.payments_count === 1 ? "" : "s"}</span></div>
+                <div className={styles.reportLinks}><a href={`/api/individual-cases/${selected.id}/reports/${report.id}/pdf?view=true`} target="_blank" rel="noreferrer">Open PDF</a><a href={`/api/individual-cases/${selected.id}/reports/${report.id}/pdf`} download><Download size={15} /> Download</a></div>
+              </div>)}</div> : <p className={styles.hint}>No reports saved for this case yet.</p>}
+              <p className={styles.hint}>Reports stay in this app's local database. Download a PDF if you need a copy outside this computer.</p>
             </div>}
           </>}
         </div>

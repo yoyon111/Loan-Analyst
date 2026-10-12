@@ -37,12 +37,14 @@ from .db import (
     LoginSession,
     IndividualCase,
     IndividualPayment,
+    IndividualReport,
     records,
     event,
 )
 from .seed import seed, write_examples, HEADERS, record_key
 from .intake import validate
 from .finance import analysis, forecast, q
+from .individual_report_pdf import render_individual_report
 
 USERS = {
     "analyst": {"id": "analyst", "name": "Alex Morgan", "role": "analyst"},
@@ -1100,6 +1102,63 @@ def individual_detail(db, c):
             ],
         },
     )
+
+
+def individual_report(db, case_id, report_id):
+    report = db.get(IndividualReport, report_id)
+    if not report or report.case_id != case_id:
+        raise HTTPException(404, "Saved report not found for this case.")
+    return report
+
+
+def report_summary(report):
+    return dict(id=report.id, title=report.title, created_at=report.created_at,
+                status=report.snapshot["status"],
+                payments_count=len(report.snapshot["servicing"]["payments"]))
+
+
+class SaveIndividualReport(BaseModel):
+    title: str = Field(min_length=2, max_length=120)
+    version: int
+
+
+@app.get("/api/individual-cases/{id}/reports")
+def list_individual_reports(id: str, db=Depends(database), u=Depends(user)):
+    individual_case(db, id)
+    reports = db.query(IndividualReport).filter_by(case_id=id).order_by(IndividualReport.created_at.desc()).all()
+    return [report_summary(report) for report in reports]
+
+
+@app.post("/api/individual-cases/{id}/reports")
+def save_individual_report(id: str, body: SaveIndividualReport, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.version != body.version:
+        raise HTTPException(409, "This case changed. Reload before saving a report.")
+    title = body.title.strip()
+    if len(title) < 2:
+        raise HTTPException(422, "Enter a report title.")
+    report = IndividualReport(id=uid(), case_id=id, title=title, snapshot=individual_detail(db, c))
+    db.add(report)
+    db.commit()
+    return report_summary(report)
+
+
+@app.get("/api/individual-cases/{id}/reports/{report_id}")
+def get_individual_report(id: str, report_id: str, db=Depends(database), u=Depends(user)):
+    individual_case(db, id)
+    report = individual_report(db, id, report_id)
+    return {**report_summary(report), "snapshot": report.snapshot}
+
+
+@app.get("/api/individual-cases/{id}/reports/{report_id}/pdf")
+def download_individual_report(id: str, report_id: str, view: bool = False, db=Depends(database), u=Depends(user)):
+    individual_case(db, id)
+    report = individual_report(db, id, report_id)
+    pdf = render_individual_report(report)
+    return Response(content=pdf, media_type="application/pdf", headers={
+        "Content-Disposition": f'{"inline" if view else "attachment"}; filename="individual-workflow-report-{report.id}.pdf"'
+    })
 
 
 class NewIndividualCase(BaseModel):

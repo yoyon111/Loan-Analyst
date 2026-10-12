@@ -76,6 +76,15 @@ class IndividualPayment(Base):
     __table_args__ = (UniqueConstraint("case_id", "due_date"),)
 
 
+class IndividualReport(Base):
+    __tablename__ = "individual_reports"
+    id = Column(String, primary_key=True)
+    case_id = Column(String, ForeignKey("individual_cases.id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    snapshot = Column(JSON, nullable=False)
+    created_at = Column(String, default=now, nullable=False)
+
+
 class ImportBatch(Base):
     __tablename__ = "imports"
     id = Column(String, primary_key=True)

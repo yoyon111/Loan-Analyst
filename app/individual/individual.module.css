@@ -57,6 +57,18 @@
 .reviewBox textarea { max-width: 720px; }
 .paymentForm { display: flex; gap: 14px; flex-wrap: wrap; align-items: end; margin: 22px 0; }
 .paymentForm label { min-width: 180px; }
+.reportSave { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin: 20px 0 28px; }
+.reportSave label { min-width: min(100%, 310px); }
+.reportSave button { display: inline-flex; align-items: center; gap: 8px; padding: 11px 17px; border: 1px solid #087364; border-radius: 9px; background: #087364; color: #fff; font-size: 13px; font-weight: 800; cursor: pointer; }
+.reportSave button:disabled { opacity: .5; cursor: not-allowed; }
+.reportSave small { width: 100%; color: #7a7770; }
+.reportList { display: grid; gap: 10px; }
+.reportRow { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 15px; border: 1px solid #dfe8e5; border-radius: 10px; background: #f7faf8; }
+.reportRow > div:first-child { display: grid; gap: 5px; min-width: 0; }
+.reportRow strong { overflow-wrap: anywhere; }
+.reportRow span { color: #627b79; font-size: 12px; }
+.reportLinks { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.reportLinks a { display: inline-flex; align-items: center; gap: 5px; color: #087364; font-size: 12px; font-weight: 800; white-space: nowrap; }
 .tableWrap { overflow-x: auto; }
 .tableWrap table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .tableWrap th, .tableWrap td { padding: 11px; border-bottom: 1px solid #e4ece9; text-align: right; white-space: nowrap; }
