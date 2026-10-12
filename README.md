@@ -1,4 +1,4 @@
-[http://10.0.0.48:3000](http://that-address:3000/individual)
+http://10.0.0.48:3000/individual
 
 # InvestOffice
 
