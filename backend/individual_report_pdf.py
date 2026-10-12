@@ -49,8 +49,8 @@ def render_individual_report(report):
     small = styles["ReportSmall"]
     story = [
         Paragraph(safe(report.title), styles["ReportTitle"]),
-        Paragraph(f"Individual rental-property loan practice | Saved {safe(report.created_at[:16].replace('T', ' '))} UTC", styles["ReportSub"]),
-        Paragraph("Practice simulation only. This report is a saved snapshot; it does not verify documents, check credit, approve a loan, or reflect real servicer accounting.", styles["ReportCell"]),
+        Paragraph(f"Rental-property origination practice | Saved {safe(report.created_at[:16].replace('T', ' '))} UTC", styles["ReportSub"]),
+        Paragraph("Practice simulation only. Figures and recommendations are illustrative; this report does not verify documents, check credit, quote a lender rate, or approve a loan.", styles["ReportCell"]),
     ]
 
     def section(title, rows):
@@ -122,6 +122,36 @@ def render_individual_report(report):
             ("Unchecked items", "; ".join(result["warnings"])),
         ])
         story.append(Paragraph("This estimate is not a real preapproval, loan offer, or credit decision.", cell))
+    offers = snapshot.get("offers", [])
+    if offers:
+        for offer in offers:
+            terms, result = offer["terms"], offer["result"]
+            section(f"Loan option: {terms['name']}", [
+                ("Status", "Stale after worksheet change" if offer["stale"] else result["status"].replace("_", " ").title()),
+                ("Loan / rate / term", f"{dollars(terms['loan_amount'])} / {terms['annual_rate']}% / {terms['term_months']} months"),
+                ("Points and lender fees", f"{terms['points_percent']}% points; {dollars(terms['lender_fees'])} fees; {dollars(terms['lender_credits'])} credits"),
+                ("Monthly housing", dollars(result["monthly_total_housing"])),
+                ("Cash to close / remaining", f"{dollars(result['cash_to_close'])} / {dollars(result['cash_after_closing'])}"),
+                ("Practice DTI / LTV", f"{result['dti_percent'] or 'Unknown'}% / {result['ltv_percent'] or 'Unknown'}%"),
+                ("Five-year interest + lender costs", dollars(result["five_year_interest_and_lender_cost"])),
+                ("Flags", "; ".join(result["reasons"]) or "None under practice assumptions"),
+            ])
+    recommendation = snapshot.get("recommendation")
+    if recommendation:
+        chosen = next((o for o in offers if o["id"] == recommendation["offer_id"]), None)
+        section("Preliminary practice recommendation", [
+            ("Selected option", chosen["terms"]["name"] if chosen else "Unavailable"),
+            ("Current for worksheet", "No" if recommendation["stale"] else "Yes"),
+            ("Rationale", recommendation["rationale"]),
+            ("Conditions", recommendation["conditions"]),
+        ])
+    decision = snapshot.get("origination_decision")
+    if decision:
+        section("Simulated underwriting decision", [
+            ("Decision", decision["decision"].replace("_", " ").title()),
+            ("Current for recommendation", "No" if decision["stale"] else "Yes"),
+            ("Notes", decision["comment"]),
+        ])
     story.append(Paragraph("Document checklist", styles["ReportHeading"]))
     checklist = snapshot["checklist"]
     if checklist:

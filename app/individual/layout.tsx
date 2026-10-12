@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Individual loan and servicing practice | InvestOffice",
-  description: "Practice an individual rental-property application, review, and payment ledger with fictional information.",
+  title: "Rental loan origination practice | InvestOffice",
+  description: "Practice rental-property intake, loan comparisons, and a preliminary recommendation with fictional information.",
 };
 
 export default function IndividualLayout({ children }: { children: React.ReactNode }) {

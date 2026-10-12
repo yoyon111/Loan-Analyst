@@ -78,6 +78,28 @@
 .notice { background: #e4f3e9; color: #1c6650; }
 .empty { display: grid; justify-items: center; padding: 90px 20px; text-align: center; color: #60777b; }
 .empty h1 { color: #243b40; }
+.offerGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 14px; margin: 24px 0; }
+.offerCard { border: 1px solid #d4e3dd; border-radius: 12px; padding: 18px; background: #fbfdfb; }
+.offerTitle { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.offerTitle h3 { margin: 0; font-size: 17px; }
+.offerTitle span { font-size: 11px; color: #146d5c; font-weight: 700; text-align: right; }
+.offerCard > p { color: #5e7775; font-size: 13px; }
+.offerCard dl { margin: 14px 0; }
+.offerCard dl div { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #e1ebe6; padding: 8px 0; font-size: 12px; }
+.offerCard dt { color: #5e7775; }
+.offerCard dd { margin: 0; font-weight: 700; text-align: right; }
+.offerCard ul { padding-left: 18px; color: #9a4538; font-size: 12px; line-height: 1.5; }
+.textButton { padding: 4px 0; border: 0; background: transparent; color: #9a4538; text-decoration: underline; cursor: pointer; }
+.recommendationSaved { margin: 22px 0; padding: 18px; border-left: 4px solid #087364; background: #edf7f1; border-radius: 8px; line-height: 1.5; }
+.recommendationSaved p { margin: 8px 0; white-space: pre-wrap; }
+.coachPanel { margin-top: 18px; padding: 22px 26px; border: 1px solid #cee0d8; border-radius: 14px; background: #eaf5ef; }
+.coachPanel h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 17px; }
+.coachPanel p, .coachPanel small { color: #55716b; font-size: 12px; line-height: 1.5; }
+.coachAsk { display: flex; gap: 8px; margin-top: 16px; }
+.coachAsk input { flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid #b8d0c5; border-radius: 8px; background: #fff; font: inherit; }
+.coachAsk button { padding: 10px 16px; border: 0; border-radius: 8px; background: #087364; color: #fff; font-weight: 700; cursor: pointer; }
+.coachAsk button:disabled { opacity: .5; cursor: not-allowed; }
+.coachAnswer { margin-top: 16px; padding: 15px; border-radius: 8px; background: #fff; color: #254149; line-height: 1.6; white-space: pre-wrap; font-size: 14px; }
 .signin { min-height: 100vh; display: grid; place-items: center; padding: 20px; background: linear-gradient(125deg, #12363c, #0e665a); color: #243c41; }
 .signinCard { width: min(100%, 520px); padding: 38px; border-radius: 18px; background: #fff; box-shadow: 0 25px 70px #06272755; }
 .signinCard .brand { color: #126458; }
@@ -87,5 +109,5 @@
 .signinCard .actions { display: grid; }
 .signinCard a { display: inline-block; margin-top: 24px; color: #126b5e; font-size: 13px; }
 @media (max-width: 1000px) { .layout { grid-template-columns: 235px minmax(0, 1fr); } .grid, .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 720px) { .topbar { padding: 15px; flex-wrap: wrap; } .topActions { flex-wrap: wrap; gap: 12px; } .layout { display: block; } .sidebar { border-right: 0; border-bottom: 1px solid #d2dfd9; padding: 16px; } .sidebar .caseButton, .sidebar .selectedCase { display: inline-grid; width: min(220px, 100%); margin-right: 8px; } .content { padding: 25px 16px; } .hero h1 { font-size: 27px; } .panel { padding: 20px 16px; } .documentRow { grid-template-columns: 26px minmax(0, 1fr); } .documentRow select { grid-column: 2; } }
+@media (max-width: 720px) { .topbar { padding: 15px; flex-wrap: wrap; } .topActions { flex-wrap: wrap; gap: 12px; } .layout { display: block; } .sidebar { border-right: 0; border-bottom: 1px solid #d2dfd9; padding: 16px; } .sidebar .caseButton, .sidebar .selectedCase { display: inline-grid; width: min(220px, 100%); margin-right: 8px; } .content { padding: 25px 16px; } .hero h1 { font-size: 27px; } .panel { padding: 20px 16px; } .documentRow { grid-template-columns: 26px minmax(0, 1fr); } .documentRow select { grid-column: 2; } .coachAsk { flex-direction: column; } }
 @media (max-width: 480px) { .grid, .summary { grid-template-columns: 1fr; } .grid .wide { grid-column: auto; } .brand { font-size: 18px; } .brand span { font-size: 11px; } .status { font-size: 10px; } }

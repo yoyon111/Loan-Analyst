@@ -3,6 +3,7 @@ import os
 import secrets
 import ipaddress
 import calendar
+import httpx
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta, timezone, date
 from decimal import Decimal
@@ -39,6 +40,9 @@ from .db import (
     IndividualPayment,
     IndividualReport,
     IndividualEstimate,
+    IndividualOffer,
+    IndividualRecommendation,
+    IndividualDecision,
     records,
     event,
 )
@@ -47,6 +51,7 @@ from .intake import validate
 from .finance import analysis, forecast, q
 from .individual_report_pdf import render_individual_report
 from .individual_estimate import estimate_loan, input_values
+from .individual_offers import evaluate_offer, offer_inputs
 
 USERS = {
     "analyst": {"id": "analyst", "name": "Alex Morgan", "role": "analyst"},
@@ -1074,6 +1079,9 @@ def individual_detail(db, c):
     payments = individual_payments(db, c.id)
     app_data = {"current_housing_payment": "0.00", **c.application}
     assessment = db.query(IndividualEstimate).filter_by(case_id=c.id).order_by(IndividualEstimate.created_at.desc()).first()
+    offers = db.query(IndividualOffer).filter_by(case_id=c.id).order_by(IndividualOffer.created_at, IndividualOffer.id).all()
+    recommendation = db.query(IndividualRecommendation).filter_by(case_id=c.id).order_by(IndividualRecommendation.created_at.desc(), IndividualRecommendation.id.desc()).first()
+    decision = db.query(IndividualDecision).filter_by(case_id=c.id).order_by(IndividualDecision.created_at.desc(), IndividualDecision.id.desc()).first()
     loan = Decimal(app_data["requested_loan"])
     balance = Decimal(payments[-1].balance) if payments else loan
     due = (
@@ -1097,6 +1105,17 @@ def individual_detail(db, c):
                  stale=assessment.input_values != input_values(app_data))
             if assessment else None
         ),
+        offers=[dict(id=o.id, terms=o.terms, result=o.result, stale=o.inputs != offer_inputs(app_data),
+                     created_at=o.created_at) for o in offers],
+        recommendation=(dict(id=recommendation.id, offer_id=recommendation.offer_id,
+                             rationale=recommendation.rationale, conditions=recommendation.conditions,
+                             created_at=recommendation.created_at,
+                             stale=not any(o.id == recommendation.offer_id and o.inputs == offer_inputs(app_data) for o in offers))
+                        if recommendation else None),
+        origination_decision=(dict(id=decision.id, decision=decision.decision, comment=decision.comment,
+                                   created_at=decision.created_at,
+                                   stale=not recommendation or decision.recommendation_id != recommendation.id or
+                                         not any(o.id == recommendation.offer_id and o.inputs == offer_inputs(app_data) for o in offers)) if decision else None),
         servicing={
             "mode": "originated",
             "annual_rate": app_data["annual_rate"],
@@ -1260,6 +1279,197 @@ def run_individual_estimate(id: str, body: IndividualEstimateInput, db=Depends(d
     db.add(assessment)
     db.commit()
     return individual_detail(db, c)["preliminary_estimate"]
+
+
+class IndividualOfferInput(BaseModel):
+    version: int
+    name: str = Field(min_length=2, max_length=80)
+    loan_amount: Decimal = Field(gt=0, le=100000000)
+    annual_rate: Decimal = Field(ge=0, le=30)
+    term_months: int = Field(ge=12, le=480)
+    points_percent: Decimal = Field(default=Decimal("0"), ge=0, le=10)
+    lender_fees: Decimal = Field(default=Decimal("0"), ge=0, le=1000000)
+    other_closing_costs: Decimal = Field(default=Decimal("0"), ge=0, le=1000000)
+    lender_credits: Decimal = Field(default=Decimal("0"), ge=0, le=1000000)
+    mortgage_insurance_monthly: Decimal = Field(default=Decimal("0"), ge=0, le=100000)
+    max_dti_percent: Decimal = Field(default=Decimal("40"), gt=0, le=100)
+    max_ltv_percent: Decimal = Field(default=Decimal("80"), gt=0, le=100)
+
+
+@app.post("/api/individual-cases/{id}/offers")
+def add_individual_offer(id: str, body: IndividualOfferInput, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.status not in ("draft", "changes_requested") or c.version != body.version:
+        raise HTTPException(409, "Save and reload the editable case before adding an option.")
+    terms = body.model_dump(mode="json", exclude={"version"})
+    terms["name"] = body.name.strip()
+    if not terms["name"]:
+        raise HTTPException(422, "Enter an option name.")
+    assumptions = {key: terms[key] for key in ("max_dti_percent", "max_ltv_percent")}
+    result = evaluate_offer(c.application, terms, assumptions)
+    offer = IndividualOffer(id=uid(), case_id=id, terms=terms,
+                            inputs=offer_inputs(c.application), result=result)
+    db.add(offer)
+    db.commit()
+    return individual_detail(db, c)
+
+
+@app.delete("/api/individual-cases/{id}/offers/{offer_id}")
+def delete_individual_offer(id: str, offer_id: str, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.status not in ("draft", "changes_requested"):
+        raise HTTPException(409, "Only an editable case can remove an option.")
+    offer = db.get(IndividualOffer, offer_id)
+    if not offer or offer.case_id != id:
+        raise HTTPException(404, "Option not found.")
+    if db.query(IndividualRecommendation).filter_by(offer_id=offer_id).first():
+        raise HTTPException(409, "This option is in a saved recommendation. Add another option and save a new recommendation instead.")
+    db.delete(offer)
+    db.commit()
+    return individual_detail(db, c)
+
+
+class IndividualRecommendationInput(BaseModel):
+    version: int
+    offer_id: str
+    rationale: str = Field(min_length=20, max_length=3000)
+    conditions: str = Field(min_length=10, max_length=3000)
+
+
+@app.post("/api/individual-cases/{id}/recommendation")
+def save_individual_recommendation(id: str, body: IndividualRecommendationInput, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.status not in ("draft", "changes_requested") or c.version != body.version:
+        raise HTTPException(409, "Save and reload the editable case before recommending.")
+    offer = db.get(IndividualOffer, body.offer_id)
+    if not offer or offer.case_id != id:
+        raise HTTPException(404, "Choose an option from this case.")
+    if offer.inputs != offer_inputs(c.application):
+        raise HTTPException(409, "This option is stale. Add it again using the current worksheet.")
+    if offer.result["status"] != "within_assumptions":
+        raise HTTPException(422, "Choose an option that fits the stated practice assumptions.")
+    recommendation = IndividualRecommendation(id=uid(), case_id=id, offer_id=offer.id,
+                                              rationale=body.rationale.strip(), conditions=body.conditions.strip())
+    db.add(recommendation)
+    db.commit()
+    return individual_detail(db, c)
+
+
+class PracticeDecisionInput(BaseModel):
+    version: int
+    decision: str = Field(pattern="^(conditional|needs_information|declined)$")
+    comment: str = Field(min_length=10, max_length=3000)
+
+
+@app.post("/api/individual-cases/{id}/practice-decision")
+def save_practice_decision(id: str, body: PracticeDecisionInput, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.application.get("mode") != "self_practice" or c.status not in ("draft", "changes_requested") or c.version != body.version:
+        raise HTTPException(409, "Reload the editable practice case before recording a decision.")
+    detail = individual_detail(db, c)
+    if not detail["recommendation"] or detail["recommendation"]["stale"]:
+        raise HTTPException(422, "Save a current preliminary recommendation first.")
+    decision = IndividualDecision(id=uid(), case_id=id, recommendation_id=detail["recommendation"]["id"],
+                                  decision=body.decision, comment=body.comment.strip())
+    db.add(decision)
+    db.commit()
+    return individual_detail(db, c)
+
+
+class PracticeCloseInput(BaseModel):
+    version: int
+
+
+@app.post("/api/individual-cases/{id}/practice-close")
+def close_individual_practice(id: str, body: PracticeCloseInput, db=Depends(database), u=Depends(user)):
+    analyst(u)
+    c = individual_case(db, id)
+    if c.application.get("mode") != "self_practice" or c.status != "draft" or c.version != body.version:
+        raise HTTPException(409, "Reload the draft practice case before simulated closing.")
+    detail = individual_detail(db, c)
+    rec = detail["recommendation"]
+    decision = detail["origination_decision"]
+    if not rec or rec["stale"] or not decision or decision["stale"] or decision["decision"] != "conditional":
+        raise HTTPException(422, "A current recommendation and conditional practice decision are required.")
+    offer = next((o for o in detail["offers"] if o["id"] == rec["offer_id"]), None)
+    if not offer or offer["stale"]:
+        raise HTTPException(422, "The chosen loan option must be current.")
+    if Decimal(str(offer["terms"]["mortgage_insurance_monthly"])) > 0:
+        raise HTTPException(422, "This after-closing practice ledger does not handle mortgage insurance. Choose an option without it for simulated closing.")
+    if any(item["status"] not in ("verified", "not_required") for item in c.checklist):
+        raise HTTPException(422, "Resolve every document-checklist item before simulated closing.")
+    if any(item["key"] in {"identity", "application", "credit_permission"} and item["status"] != "verified" for item in c.checklist):
+        raise HTTPException(422, "Verify identity, application, and credit permission before simulated closing.")
+    if not c.application.get("credit_authorized") or not c.application.get("first_due_date"):
+        raise HTTPException(422, "Record credit permission and the first payment due date before simulated closing.")
+    if not c.application.get("property_address", "").strip() or Decimal(str(c.application.get("purchase_price", 0))) <= 0:
+        raise HTTPException(422, "Enter a property address and purchase price before simulated closing.")
+    a = dict(c.application)
+    a["requested_loan"] = offer["terms"]["loan_amount"]
+    a["annual_rate"] = offer["terms"]["annual_rate"]
+    a["term_months"] = offer["terms"]["term_months"]
+    c.application = a
+    c.status = "active"
+    db.commit()
+    return individual_detail(db, c)
+
+
+class IndividualCoachInput(BaseModel):
+    stage: str = Field(pattern="^(application|documents|estimate|offers|recommendation|closing|reports)$")
+    question: str = Field(min_length=2, max_length=800)
+
+
+@app.post("/api/individual-cases/{id}/coach")
+async def coach_individual_case(id: str, body: IndividualCoachInput, db=Depends(database), u=Depends(user)):
+    c = individual_case(db, id)
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(503, "AI coach is not configured. Set OPENAI_API_KEY on the backend and restart it.")
+    detail = individual_detail(db, c)
+    a = detail["application"]
+    safe_case = {key: a.get(key) for key in (
+        "purchase_price", "requested_loan", "annual_income", "liquid_assets", "reserves",
+        "monthly_debt", "current_housing_payment", "expected_monthly_rent",
+        "property_tax_annual", "insurance_annual", "hoa_monthly",
+    )}
+    context = {
+        "stage": body.stage,
+        "numeric_case": safe_case,
+        "document_statuses": {item["key"]: item["status"] for item in detail["checklist"]},
+        "estimate": detail["preliminary_estimate"],
+        "options": [{"name": o["terms"]["name"], "terms": {k: v for k, v in o["terms"].items() if k != "name"},
+                     "result": o["result"], "stale": o["stale"]} for o in detail["offers"]],
+    }
+    payload = {
+        "model": "gpt-6-luna",
+        "reasoning": {"effort": "low"},
+        "store": False,
+        "max_output_tokens": 600,
+        "instructions": ("You are an educational mortgage origination coach for a single learner. "
+                         "Explain the current step in plain English, briefly. Ask for one next action when useful. "
+                         "Use only the supplied case figures and do not invent rates, lender programs, approval, or eligibility. "
+                         "The app's thresholds are learner assumptions, not lender policy. Expected rent was not counted for qualification. "
+                         "Do not make the credit decision or pick an option for the learner. "
+                         "Avoid repeating personal data; no names, addresses, IDs, or documents are included."),
+        "input": f"Case context: {context}\nLearner question: {body.question}",
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.post("https://api.openai.com/v1/responses", json=payload,
+                                         headers={"Authorization": f"Bearer {api_key}"})
+        response.raise_for_status()
+        data = response.json()
+        answer = "\n".join(part.get("text", "") for item in data.get("output", [])
+                           for part in item.get("content", []) if part.get("type") == "output_text").strip()
+        if not answer:
+            raise ValueError("Empty coach response")
+        return {"answer": answer, "model": "gpt-6-luna", "reasoning_effort": "low"}
+    except (httpx.HTTPError, ValueError):
+        raise HTTPException(502, "The AI coach is unavailable right now. The calculator and case workflow still work.")
 
 
 class IndividualChecklistItem(BaseModel):

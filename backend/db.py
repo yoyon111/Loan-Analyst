@@ -95,6 +95,36 @@ class IndividualEstimate(Base):
     created_at = Column(String, default=now, nullable=False)
 
 
+class IndividualOffer(Base):
+    __tablename__ = "individual_offers"
+    id = Column(String, primary_key=True)
+    case_id = Column(String, ForeignKey("individual_cases.id"), nullable=False, index=True)
+    terms = Column(JSON, nullable=False)
+    inputs = Column(JSON, nullable=False)
+    result = Column(JSON, nullable=False)
+    created_at = Column(String, default=now, nullable=False)
+
+
+class IndividualRecommendation(Base):
+    __tablename__ = "individual_recommendations"
+    id = Column(String, primary_key=True)
+    case_id = Column(String, ForeignKey("individual_cases.id"), nullable=False, index=True)
+    offer_id = Column(String, ForeignKey("individual_offers.id"), nullable=False)
+    rationale = Column(Text, nullable=False)
+    conditions = Column(Text, nullable=False)
+    created_at = Column(String, default=now, nullable=False)
+
+
+class IndividualDecision(Base):
+    __tablename__ = "individual_decisions"
+    id = Column(String, primary_key=True)
+    case_id = Column(String, ForeignKey("individual_cases.id"), nullable=False, index=True)
+    recommendation_id = Column(String, ForeignKey("individual_recommendations.id"), nullable=False)
+    decision = Column(String, nullable=False)
+    comment = Column(Text, nullable=False)
+    created_at = Column(String, default=now, nullable=False)
+
+
 class ImportBatch(Base):
     __tablename__ = "imports"
     id = Column(String, primary_key=True)

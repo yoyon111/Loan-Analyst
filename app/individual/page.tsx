@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, ClipboardList, Download, FileText, Home, Landmark, LogOut, Plus, Save, Wallet } from "lucide-react";
+import { ArrowRight, CheckCircle2, ClipboardList, Download, FileText, Home, Landmark, LogOut, Plus, Save, Wallet, Sparkles } from "lucide-react";
 import { api, money } from "@/lib/api";
 import styles from "./individual.module.css";
 
@@ -29,10 +29,25 @@ type IndividualCase = {
   id: string; application: Application; checklist: ChecklistItem[];
   status: string; review_comment: string; version: number;
   preliminary_estimate: PracticeEstimate | null;
+  offers: PracticeOffer[];
+  recommendation: PracticeRecommendation | null;
+  origination_decision: { id: string; decision: string; comment: string; stale: boolean; created_at: string } | null;
   servicing: { mode: "originated"; annual_rate: string; balance: string;
     scheduled_principal_interest: string; full_payment_due: string;
     monthly_escrow: string; next_due_date: string | null; payments: Payment[] };
 };
+type PracticeOffer = { id: string; created_at: string; stale: boolean; terms: {
+  name: string; loan_amount: string; annual_rate: string; term_months: number;
+  points_percent: string; lender_fees: string; other_closing_costs: string;
+  lender_credits: string; mortgage_insurance_monthly: string;
+  max_dti_percent: string; max_ltv_percent: string;
+}; result: {
+  status: string; reasons: string[]; monthly_principal_interest: string;
+  monthly_total_housing: string; dti_percent: string | null; ltv_percent: string | null;
+  estimated_closing_costs: string; cash_to_close: string; cash_after_closing: string;
+  five_year_interest_and_lender_cost: string; balance_after_five_years: string;
+} };
+type PracticeRecommendation = { id: string; offer_id: string; rationale: string; conditions: string; stale: boolean; created_at: string };
 type PracticeEstimate = {
   id: string; created_at: string; stale: boolean;
   assumptions: { max_dti_percent: string; max_ltv_percent: string; closing_cost_percent: string };
@@ -51,7 +66,7 @@ type PracticeEstimate = {
 };
 type CaseSummary = { id: string; applicant_name: string; property_address: string; mode: string; status: string };
 type SavedReport = { id: string; title: string; created_at: string; status: string; payments_count: number };
-type Section = "application" | "documents" | "estimate" | "review" | "servicing" | "reports";
+type Section = "application" | "documents" | "estimate" | "offers" | "recommendation" | "closing" | "review" | "servicing" | "reports";
 
 const checklistLabels: Record<string, { title: string; help: string }> = {
   identity: { title: "Identity and Social Security number", help: "Mark verification status only. Do not enter ID numbers here." },
@@ -84,7 +99,7 @@ const moneyFields: { key: keyof Application; label: string }[] = [
 ];
 const statusLabel: Record<string, string> = {
   draft: "Draft", in_review: "In review", changes_requested: "Changes requested",
-  approved: "Approved in simulation", active: "Practice servicing",
+  approved: "Approved in simulation", active: "After closing practice",
 };
 const cents = (value: string | number) => new Intl.NumberFormat("en-US", {
   style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2,
@@ -108,6 +123,15 @@ export default function IndividualPage() {
   const [estimateAssumptions, setEstimateAssumptions] = useState({
     max_dti_percent: "40", max_ltv_percent: "80", closing_cost_percent: "3",
   });
+  const [offerDraft, setOfferDraft] = useState({ name: "Option A", loan_amount: "", annual_rate: "8", term_months: "360", points_percent: "0", lender_fees: "0", other_closing_costs: "0", lender_credits: "0", mortgage_insurance_monthly: "0" });
+  const [selectedOfferId, setSelectedOfferId] = useState("");
+  const [rationale, setRationale] = useState("");
+  const [conditions, setConditions] = useState("Verify credit, income, assets, property appraisal, and program eligibility before any real decision.");
+  const [decisionChoice, setDecisionChoice] = useState("conditional");
+  const [decisionComment, setDecisionComment] = useState("Conditional practice decision; complete all verification before simulated closing.");
+  const [coachQuestion, setCoachQuestion] = useState("");
+  const [coachAnswer, setCoachAnswer] = useState("");
+  const [coachBusy, setCoachBusy] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -125,7 +149,14 @@ export default function IndividualPage() {
     setEstimateAssumptions(detail.preliminary_estimate?.assumptions || {
       max_dti_percent: "40", max_ltv_percent: "80", closing_cost_percent: "3",
     });
-    setSection(detail.application.mode === "self_practice" && detail.status === "active" ? "servicing" : "application");
+    setOfferDraft(prev => ({ ...prev, loan_amount: detail.application.requested_loan, annual_rate: Number(detail.application.annual_rate) > 0 ? detail.application.annual_rate : "8" }));
+    setSelectedOfferId(detail.recommendation?.offer_id || "");
+    setRationale(detail.recommendation?.rationale || "");
+    setConditions(detail.recommendation?.conditions || "Verify credit, income, assets, property appraisal, and program eligibility before any real decision.");
+    setDecisionChoice(detail.origination_decision?.decision || "conditional");
+    setDecisionComment(detail.origination_decision?.comment || "Conditional practice decision; complete all verification before simulated closing.");
+    setCoachAnswer("");
+    setSection("application");
     return detail;
   }, []);
   useEffect(() => {
@@ -179,6 +210,18 @@ export default function IndividualPage() {
     setDraft(prev => prev ? { ...prev, checklist: prev.checklist.map(item => item.key === key ? { ...item, ...patch } : item) } : prev);
     setDirty(true);
   }
+  function fillExample() {
+    setDraft(prev => prev ? { ...prev, application: {
+      ...prev.application, applicant_name: "Fictional rental borrower", property_address: "123 Example Street",
+      purchase_price: "250000", requested_loan: "200000", down_payment: "50000",
+      down_payment_source: "Fictional savings", annual_income: "120000", employer: "Example employer",
+      liquid_assets: "90000", reserves: "10000", monthly_debt: "500",
+      current_housing_payment: "1200", expected_monthly_rent: "2200",
+      property_tax_annual: "4000", insurance_annual: "2000", hoa_monthly: "0",
+      annual_rate: "8", term_months: 360,
+    } } : prev);
+    setDirty(true);
+  }
   async function save() {
     if (!draft) return;
     await run(async () => {
@@ -197,6 +240,7 @@ export default function IndividualPage() {
       setSelected(updated); setDraft(updated); setDirty(false); await refreshList();
       if (path === "submit") setSection("review");
       if (path === "activate" || path === "practice-activate") setSection("servicing");
+      if (path === "practice-close") setSection("reports");
     }, message);
   }
   async function saveReport() {
@@ -218,6 +262,50 @@ export default function IndividualPage() {
       setDraft(prev => prev ? { ...prev, preliminary_estimate: assessment } : prev);
     }, "Practice estimate saved with this case.");
   }
+  async function addOffer() {
+    if (!selected || dirty) return;
+    await run(async () => {
+      const updated = await api<IndividualCase>(`/individual-cases/${selected.id}/offers`, {
+        method: "POST", body: JSON.stringify({ version: selected.version, ...offerDraft,
+          term_months: Number(offerDraft.term_months),
+          max_dti_percent: estimateAssumptions.max_dti_percent,
+          max_ltv_percent: estimateAssumptions.max_ltv_percent }),
+      });
+      setSelected(updated); setDraft(updated);
+      setOfferDraft(prev => ({ ...prev, name: `Option ${String.fromCharCode(65 + updated.offers.length)}` }));
+    }, "Loan option added to the comparison.");
+  }
+  async function removeOffer(offerId: string) {
+    if (!selected) return;
+    await run(async () => {
+      const updated = await api<IndividualCase>(`/individual-cases/${selected.id}/offers/${offerId}`, { method: "DELETE" });
+      setSelected(updated); setDraft(updated);
+    }, "Option removed.");
+  }
+  async function saveRecommendation() {
+    if (!selected || dirty) return;
+    await run(async () => {
+      const updated = await api<IndividualCase>(`/individual-cases/${selected.id}/recommendation`, {
+        method: "POST", body: JSON.stringify({ version: selected.version, offer_id: selectedOfferId, rationale, conditions }),
+      });
+      setSelected(updated); setDraft(updated);
+    }, "Preliminary practice recommendation saved.");
+  }
+  async function saveDecision() {
+    if (!selected || dirty) return;
+    await transition("practice-decision", { decision: decisionChoice, comment: decisionComment }, "Practice underwriting decision saved.");
+  }
+  async function askCoach() {
+    if (!selected || dirty || !coachQuestion.trim()) return;
+    setCoachBusy(true); setError(""); setCoachAnswer("");
+    try {
+      const result = await api<{answer: string}>(`/individual-cases/${selected.id}/coach`, {
+        method: "POST", body: JSON.stringify({ stage: section === "servicing" || section === "review" ? "recommendation" : section, question: coachQuestion }),
+      });
+      setCoachAnswer(result.answer);
+    } catch (e) { setError(e instanceof Error ? e.message : "Coach unavailable."); }
+    finally { setCoachBusy(false); }
+  }
   const editable = user?.role === "analyst" && (selected?.status === "draft" || selected?.status === "changes_requested");
   const verifiedCount = draft?.checklist.filter(item => item.status === "verified" || item.status === "not_required").length ?? 0;
   const monthlyDue = selected?.servicing.full_payment_due || "";
@@ -227,8 +315,8 @@ export default function IndividualPage() {
     <main className={styles.signin}>
       <div className={styles.signinCard}>
         <div className={styles.brand}><Landmark size={28} /> InvestOffice <span>Individual lending</span></div>
-        <h1>Practice individual loan servicing</h1>
-        <p>Enter a rental-property worksheet, set up a practice loan, and simulate its payments. Use fictional or rounded information only.</p>
+        <h1>Practice rental loan origination</h1>
+        <p>Work from borrower intake through loan comparison and a preliminary recommendation. Use fictional information only.</p>
         <div className={styles.actions}>
           <button disabled={busy} onClick={() => login("yonathan")}>Continue as Yonathan <ArrowRight size={17} /></button>
         </div>
@@ -248,34 +336,35 @@ export default function IndividualPage() {
         <aside className={styles.sidebar}>
           <p className={styles.eyebrow}>PRACTICE CASES</p>
           {cases.map(item => <button key={item.id} className={selected?.id === item.id ? styles.selectedCase : styles.caseButton} onClick={() => { if (dirty && !window.confirm("Discard unsaved changes?")) return; run(async () => { await loadCase(item.id); }); }}>
-            <strong>{item.applicant_name}</strong><small>{item.mode === "self_practice" ? "Rental-property servicing practice" : item.property_address || "Property not entered"}</small><span>{statusLabel[item.status]}</span>
+            <strong>{item.applicant_name}</strong><small>{item.mode === "self_practice" ? "Rental-property origination practice" : item.property_address || "Property not entered"}</small><span>{statusLabel[item.status]}</span>
           </button>)}
           {user.role === "analyst" && <form className={styles.newCase} onSubmit={e => { e.preventDefault(); run(async () => {
             const created = await api<{ id: string }>("/individual-cases/practice", { method: "POST", body: JSON.stringify({ applicant_name: newName, requested_loan: newAmount }) });
             await refreshList(); await loadCase(created.id); setNewName(""); setNewAmount("");
           }, "Individual case created."); }}>
-            <h3><Plus size={17} /> Start from borrower worksheet</h3>
+            <h3><Plus size={17} /> New origination case</h3>
             <label>Practice case label<input required minLength={2} value={newName} onChange={e => setNewName(e.target.value)} placeholder="Rental loan practice" /></label>
-            <label>Loan amount ($)<input required min="1" type="number" step="0.01" value={newAmount} onChange={e => setNewAmount(e.target.value)} /></label>
-            <button disabled={busy}>Create practice loan</button>
+            <label>Requested loan ($)<input required min="1" type="number" step="0.01" value={newAmount} onChange={e => setNewAmount(e.target.value)} /></label>
+            <button disabled={busy}>Create case</button>
           </form>}
-          <p className={styles.safety}>Enter the borrower worksheet answers and loan terms, save, then start servicing. Post a payment to inspect the principal, interest, and escrow split. The document checklist is optional practice.</p>
+          <p className={styles.safety}>1. Enter borrower and property figures. 2. Track documents. 3. Estimate affordability. 4. Compare options. 5. Explain your recommendation. 6. Record a practice decision and review closing conditions.</p>
           <p className={styles.safety}>Practice data only. Do not enter real SSNs, upload ID files, or use this for a real credit decision.</p>
         </aside>
         <div className={styles.content}>
           {error && <div className={styles.error} role="alert">{error}</div>}
           {notice && <div className={styles.notice} role="status">{notice}</div>}
-          {!selected || !draft ? <div className={styles.empty}><Home size={35} /><h1>No practice case selected</h1><p>Create a practice loan from the borrower worksheet.</p></div> : <>
+          {!selected || !draft ? <div className={styles.empty}><Home size={35} /><h1>No practice case selected</h1><p>Create an origination case from the borrower worksheet.</p></div> : <>
             <div className={styles.hero}>
               <div><p className={styles.eyebrow}>INDIVIDUAL · RENTAL PROPERTY</p><h1>{draft.application.applicant_name}</h1><p>{draft.application.property_address || "Enter the worksheet and proposed loan terms"}</p></div>
               <span className={styles.status}>{statusLabel[selected.status]}</span>
             </div>
             <nav className={styles.tabs} aria-label="Individual loan workflow">
-              {((draft.application.mode === "self_practice" ? [["application", "Worksheet & terms", ClipboardList], ["documents", "Documents", FileText], ["estimate", "Estimate", CheckCircle2], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]] : [["application", "Application", ClipboardList], ["documents", "Documents", FileText], ["estimate", "Estimate", CheckCircle2], ["review", "Review", CheckCircle2], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]]) as [Section, string, typeof Wallet][]).map(([key, label, Icon]) =>
+              {((draft.application.mode === "self_practice" ? [["application", "1. Intake", ClipboardList], ["documents", "2. Documents", FileText], ["estimate", "3. Affordability", CheckCircle2], ["offers", "4. Compare loans", Landmark], ["recommendation", "5. Recommendation", CheckCircle2], ["closing", "6. Review & close", ClipboardList], ["reports", "7. Reports", Download], ["servicing", "After closing", Wallet]] : [["application", "Application", ClipboardList], ["documents", "Documents", FileText], ["estimate", "Estimate", CheckCircle2], ["offers", "Compare loans", Landmark], ["recommendation", "Recommendation", CheckCircle2], ["review", "Review", CheckCircle2], ["servicing", "Servicing", Wallet], ["reports", "Reports", Download]]) as [Section, string, typeof Wallet][]).map(([key, label, Icon]) =>
                 <button key={key} className={section === key ? styles.activeTab : ""} onClick={() => setSection(key)}><Icon size={17} /> {label}</button>)}
             </nav>
             {section === "application" && <div className={styles.panel}>
               <div className={styles.panelHead}><div><h2>Loan application</h2><p>Applicant, property, income, assets, debts, and proposed loan terms.</p></div></div>
+              {editable && <div className={styles.actions}><button className={styles.secondary} disabled={busy} onClick={fillExample}>Fill fictional example</button><small>Try the whole workflow without personal data.</small></div>}
               <fieldset disabled={!editable || busy}>
                 <div className={styles.grid}>
                   <label>Applicant name<input value={draft.application.applicant_name} onChange={e => change("applicant_name", e.target.value)} /></label>
@@ -294,7 +383,7 @@ export default function IndividualPage() {
                 <label className={styles.check}><input type="checkbox" checked={draft.application.credit_authorized} onChange={e => change("credit_authorized", e.target.checked)} /> Applicant permission to check credit has been documented in this practice case</label>
                 <p className={styles.hint}>Checking this box does not request a credit report.</p>
               </fieldset>
-              {editable && <div className={styles.actions}><button disabled={busy || !dirty} onClick={save}><Save size={17} /> Save application</button>{draft.application.mode === "self_practice" && <button disabled={busy || dirty || !selected.application.first_due_date} onClick={() => transition("practice-activate", {}, "Servicing practice opened.")}>Start servicing practice <ArrowRight size={17} /></button>}{draft.application.mode === "self_practice" && <small>Save the interest rate and first payment due date before starting.</small>}</div>}
+              {editable && <div className={styles.actions}><button disabled={busy || !dirty} onClick={save}><Save size={17} /> Save application</button><button className={styles.secondary} disabled={dirty} onClick={() => setSection("documents")}>Next: documents <ArrowRight size={17} /></button></div>}
             </div>}
             {section === "documents" && <div className={styles.panel}>
               <div className={styles.panelHead}><div><h2>Document checklist</h2><p>{verifiedCount} of {draft.checklist.length} items verified or marked not required. This tracks status; it does not store document files.</p></div></div>
@@ -335,6 +424,70 @@ export default function IndividualPage() {
                 <div className={styles.estimateNotes}><strong>What remains unchecked</strong><ul>{selected.preliminary_estimate.result.warnings.map(item => <li key={item}>{item}</li>)}</ul></div>
               </>}
               <p className={styles.hint}>This is an educational scenario result, not a preapproval, loan offer, credit decision, or lender commitment. A real lender must verify finances, credit, property, and program eligibility. <a href="https://www.consumerfinance.gov/owning-a-home/explore/get-a-preapproval-letter/" target="_blank" rel="noreferrer">What real preapproval means</a>.</p>
+            </div>}
+            {section === "offers" && <div className={styles.panel}>
+              <h2>Compare possible loans</h2>
+              <p>Add at least two options for the same property. Enter hypothetical figures for practice, or figures from lender Loan Estimates. The app calculates each option separately.</p>
+              <div className={styles.grid}>
+                <label>Option name<input value={offerDraft.name} onChange={e => setOfferDraft({ ...offerDraft, name: e.target.value })} /></label>
+                <label>Loan amount ($)<input type="number" min="1" step="0.01" value={offerDraft.loan_amount} onChange={e => setOfferDraft({ ...offerDraft, loan_amount: e.target.value })} /></label>
+                <label>Interest rate (%)<input type="number" min="0" max="30" step="0.001" value={offerDraft.annual_rate} onChange={e => setOfferDraft({ ...offerDraft, annual_rate: e.target.value })} /></label>
+                <label>Term (months)<input type="number" min="12" max="480" value={offerDraft.term_months} onChange={e => setOfferDraft({ ...offerDraft, term_months: e.target.value })} /></label>
+                <label>Discount points (% of loan)<input type="number" min="0" max="10" step="0.01" value={offerDraft.points_percent} onChange={e => setOfferDraft({ ...offerDraft, points_percent: e.target.value })} /></label>
+                <label>Other lender fees ($)<input type="number" min="0" step="0.01" value={offerDraft.lender_fees} onChange={e => setOfferDraft({ ...offerDraft, lender_fees: e.target.value })} /></label>
+                <label>Other closing costs ($)<input type="number" min="0" step="0.01" value={offerDraft.other_closing_costs} onChange={e => setOfferDraft({ ...offerDraft, other_closing_costs: e.target.value })} /></label>
+                <label>Lender credits ($)<input type="number" min="0" step="0.01" value={offerDraft.lender_credits} onChange={e => setOfferDraft({ ...offerDraft, lender_credits: e.target.value })} /></label>
+                <label>Monthly mortgage insurance ($)<input type="number" min="0" step="0.01" value={offerDraft.mortgage_insurance_monthly} onChange={e => setOfferDraft({ ...offerDraft, mortgage_insurance_monthly: e.target.value })} /></label>
+              </div>
+              <p className={styles.hint}>Fixed-rate, fully amortizing practice options. Taxes, insurance, and HOA come from the worksheet. The DTI and LTV limits come from the Affordability tab and are exercise assumptions.</p>
+              {editable && <div className={styles.actions}><button disabled={busy || dirty || !offerDraft.name.trim() || !Number(offerDraft.loan_amount)} onClick={addOffer}><Plus size={17} /> Add option</button>{dirty && <small>Save worksheet changes first.</small>}</div>}
+              {selected.offers.length > 0 && <div className={styles.offerGrid}>{selected.offers.map(offer => <article className={styles.offerCard} key={offer.id}>
+                <div className={styles.offerTitle}><h3>{offer.terms.name}</h3><span>{offer.stale ? "Recalculate after worksheet change" : offer.result.status === "within_assumptions" ? "Fits practice assumptions" : offer.result.status === "needs_information" ? "Needs information" : "Outside assumptions"}</span></div>
+                <p>{cents(offer.terms.loan_amount)} · {offer.terms.annual_rate}% · {offer.terms.term_months} months</p>
+                <dl>
+                  <div><dt>Total monthly housing</dt><dd>{cents(offer.result.monthly_total_housing)}</dd></div>
+                  <div><dt>Cash to close</dt><dd>{cents(offer.result.cash_to_close)}</dd></div>
+                  <div><dt>Cash left after closing</dt><dd>{cents(offer.result.cash_after_closing)}</dd></div>
+                  <div><dt>DTI / LTV</dt><dd>{offer.result.dti_percent ?? "—"}% / {offer.result.ltv_percent ?? "—"}%</dd></div>
+                  <div><dt>Five-year interest + lender costs</dt><dd>{cents(offer.result.five_year_interest_and_lender_cost)}</dd></div>
+                </dl>
+                {offer.result.reasons.length > 0 && <ul>{offer.result.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}
+                {editable && <button className={styles.textButton} disabled={busy} onClick={() => removeOffer(offer.id)}>Remove option</button>}
+              </article>)}</div>}
+              <p className={styles.hint}>Five-year figure is this simulator&apos;s interest plus points and lender fees, net of lender credits. It is not the official Loan Estimate comparison figure or APR. Rent is not counted for qualification.</p>
+              <div className={styles.actions}><button className={styles.secondary} onClick={() => setSection("recommendation")}>Next: recommendation <ArrowRight size={17} /></button></div>
+            </div>}
+            {section === "recommendation" && <div className={styles.panel}>
+              <h2>Your preliminary recommendation</h2>
+              <p>Choose an option that fits the practice assumptions. Explain why its payment, cash to close, and cost make sense for this case. List what remains to be checked.</p>
+              {selected.offers.length < 2 && <div className={styles.notice}>Add at least two options in Compare loans so you can explain the tradeoff. You can still save a recommendation after one option.</div>}
+              <div className={styles.grid}>
+                <label>Recommended option<select value={selectedOfferId} onChange={e => setSelectedOfferId(e.target.value)}><option value="">Choose an option</option>{selected.offers.filter(o => !o.stale && o.result.status === "within_assumptions").map(o => <option value={o.id} key={o.id}>{o.terms.name} — {o.terms.annual_rate}%</option>)}</select></label>
+                <label className={styles.wide}>Why this option?<textarea rows={4} value={rationale} onChange={e => setRationale(e.target.value)} placeholder="Compare its monthly payment, cash to close, remaining reserves, and five-year cost with the other options." /></label>
+                <label className={styles.wide}>Conditions and missing checks<textarea rows={4} value={conditions} onChange={e => setConditions(e.target.value)} /></label>
+              </div>
+              {editable && <div className={styles.actions}><button disabled={busy || dirty || !selectedOfferId || rationale.trim().length < 20 || conditions.trim().length < 10} onClick={saveRecommendation}><Save size={17} /> Save recommendation</button></div>}
+              {selected.recommendation && <div className={styles.recommendationSaved}><strong>{selected.recommendation.stale ? "Saved recommendation needs review after worksheet changes" : "Saved preliminary recommendation"}</strong><p>{selected.offers.find(o => o.id === selected.recommendation?.offer_id)?.terms.name || "Option"}</p><p>{selected.recommendation.rationale}</p><p><strong>Conditions:</strong> {selected.recommendation.conditions}</p></div>}
+              <p className={styles.hint}>This is your practice judgment, not a lender approval or commitment. A lender would verify credit, income, assets, property, appraisal, and its own program rules.</p>
+              <div className={styles.actions}><button className={styles.secondary} onClick={() => setSection(draft.application.mode === "self_practice" ? "closing" : "reports")}>Next: {draft.application.mode === "self_practice" ? "review and close" : "save report"} <ArrowRight size={17} /></button></div>
+            </div>}
+            {section === "closing" && <div className={styles.panel}>
+              <h2>Simulated underwriting and closing</h2>
+              <p>Record your practice decision. A conditional result means the chosen option fit your assumptions; it does not mean a lender approved it.</p>
+              <div className={styles.summary}>
+                <div><span>Current recommendation</span><strong>{selected.recommendation && !selected.recommendation.stale ? "Saved" : "Missing or stale"}</strong></div>
+                <div><span>Documents resolved</span><strong>{verifiedCount} / {draft.checklist.length}</strong></div>
+                <div><span>Credit permission recorded</span><strong>{draft.application.credit_authorized ? "Yes" : "No"}</strong></div>
+                <div><span>First payment due date</span><strong>{draft.application.first_due_date || "Missing"}</strong></div>
+              </div>
+              <div className={styles.grid}>
+                <label>Practice decision<select value={decisionChoice} onChange={e => setDecisionChoice(e.target.value)}><option value="conditional">Conditional</option><option value="needs_information">Needs information</option><option value="declined">Declined under practice assumptions</option></select></label>
+                <label className={styles.wide}>Decision notes<textarea rows={3} value={decisionComment} onChange={e => setDecisionComment(e.target.value)} /></label>
+              </div>
+              {editable && <div className={styles.actions}><button disabled={busy || dirty || !selected.recommendation || selected.recommendation.stale || decisionComment.trim().length < 10} onClick={saveDecision}>Record practice decision</button></div>}
+              {selected.origination_decision && <div className={styles.recommendationSaved}><strong>{selected.origination_decision.stale ? "Decision needs review" : `Recorded: ${selected.origination_decision.decision.replace("_", " ")}`}</strong><p>{selected.origination_decision.comment}</p></div>}
+              <p className={styles.hint}>To simulate closing, resolve all document items, verify identity, application, and credit permission, enter a property address and first payment due date, and save the worksheet. The selected option supplies the final loan amount, rate, and term. This action locks the practice case.</p>
+              {editable && <div className={styles.actions}><button disabled={busy || dirty || !selected.origination_decision || selected.origination_decision.stale || selected.origination_decision.decision !== "conditional" || verifiedCount !== draft.checklist.length || !draft.application.credit_authorized || !draft.application.first_due_date} onClick={() => transition("practice-close", {}, "Simulated closing completed. The after-closing ledger is available.")}>Complete simulated closing</button></div>}
             </div>}
             {section === "review" && <div className={styles.panel}>
               <h2>Case review</h2>
@@ -377,7 +530,7 @@ export default function IndividualPage() {
             </div>}
             {section === "reports" && <div className={styles.panel}>
               <h2>Saved workflow reports</h2>
-              <p>Save a snapshot of this case at any stage. Each report keeps the worksheet answers, loan terms, checklist, servicing figures, and payment history as they stood when saved.</p>
+              <p>Save a snapshot of the intake, document statuses, estimate, loan comparisons, and your recommendation. You can reopen or download it later.</p>
               {user.role === "analyst" && <div className={styles.reportSave}>
                 <label>Report title<input maxLength={120} minLength={2} value={reportTitle} onChange={e => setReportTitle(e.target.value)} /></label>
                 <button disabled={busy || dirty || reportTitle.trim().length < 2} onClick={saveReport}><Save size={16} /> Save report</button>
@@ -388,6 +541,13 @@ export default function IndividualPage() {
                 <div className={styles.reportLinks}><a href={`/api/individual-cases/${selected.id}/reports/${report.id}/pdf?view=true`} target="_blank" rel="noreferrer">Open PDF</a><a href={`/api/individual-cases/${selected.id}/reports/${report.id}/pdf`} download><Download size={15} /> Download</a></div>
               </div>)}</div> : <p className={styles.hint}>No reports saved for this case yet.</p>}
               <p className={styles.hint}>Reports stay in this app's local database. Download a PDF if you need a copy outside this computer.</p>
+            </div>}
+            {section !== "servicing" && section !== "review" && <div className={styles.coachPanel}>
+              <h2><Sparkles size={19} /> Ask the origination coach</h2>
+              <p>GPT-6 Luna (low reasoning) explains this step using saved numeric case details. It cannot approve a loan or supply a real rate. Case names and addresses are omitted; do not type personal details in your question.</p>
+              <div className={styles.coachAsk}><input aria-label="Question for origination coach" maxLength={800} value={coachQuestion} onChange={e => setCoachQuestion(e.target.value)} onKeyDown={e => { if (e.key === "Enter") askCoach(); }} placeholder="What should I check at this step?" /><button disabled={coachBusy || dirty || !coachQuestion.trim()} onClick={askCoach}>{coachBusy ? "Thinking…" : "Ask coach"}</button></div>
+              {dirty && <small>Save worksheet changes before asking so the coach sees current figures.</small>}
+              {coachAnswer && <div className={styles.coachAnswer}>{coachAnswer}</div>}
             </div>}
           </>}
         </div>

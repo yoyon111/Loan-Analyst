@@ -596,3 +596,152 @@ def test_individual_practice_estimate_excludes_rent_and_tracks_stale_inputs(clie
     }).json()["result"]
     assert lower["status"] == "outside_assumptions"
     assert any("debt" in reason.lower() for reason in lower["reasons"])
+
+
+def test_origination_options_recommendation_and_report_snapshot(client):
+    cl, _ = client
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "yonathan"})
+    created = cl.post("/api/individual-cases/practice", json={
+        "applicant_name": "Fictional applicant", "requested_loan": "200000",
+    }).json()
+    path = "/api/individual-cases/" + created["id"]
+    case = cl.get(path).json()
+    saved = cl.put(path, json={
+        **case["application"], "version": case["version"], "checklist": case["checklist"],
+        "annual_income": "120000", "monthly_debt": "500", "current_housing_payment": "1200",
+        "liquid_assets": "90000", "reserves": "10000", "purchase_price": "250000",
+        "property_tax_annual": "4000", "insurance_annual": "2000",
+        "expected_monthly_rent": "999999",
+    }).json()
+    terms = {
+        "version": saved["version"], "name": "Fixed A", "loan_amount": "200000",
+        "annual_rate": "8", "term_months": 360, "points_percent": "1",
+        "lender_fees": "1000", "other_closing_costs": "4000",
+        "lender_credits": "0", "mortgage_insurance_monthly": "0",
+        "max_dti_percent": "40", "max_ltv_percent": "80",
+    }
+    response = cl.post(path + "/offers", json=terms)
+    assert response.status_code == 200, response.text
+    offer = response.json()["offers"][0]
+    assert offer["result"]["status"] == "within_assumptions"
+    assert offer["result"]["cash_to_close"] == "57000.00"
+    assert offer["result"]["cash_after_closing"] == "33000.00"
+    assert offer["result"]["monthly_total_housing"] == "1967.53"
+    assert offer["result"]["five_year_interest_and_lender_cost"] != "0.00"
+    assert offer["result"]["rent_counted_for_qualification"] is False
+    second = cl.post(path + "/offers", json={**terms, "name": "Fixed B", "annual_rate": "9", "points_percent": "0"})
+    assert second.status_code == 200, second.text
+    assert len(second.json()["offers"]) == 2
+    rec = cl.post(path + "/recommendation", json={
+        "version": saved["version"], "offer_id": offer["id"],
+        "rationale": "Option A has a lower monthly payment and leaves adequate reserves.",
+        "conditions": "Verify credit, income, assets, appraisal, and program rules.",
+    })
+    assert rec.status_code == 200, rec.text
+    assert rec.json()["recommendation"]["stale"] is False
+    report = cl.post(path + "/reports", json={"title": "Origination comparison", "version": saved["version"]})
+    assert report.status_code == 200, report.text
+    snapshot = cl.get(path + "/reports/" + report.json()["id"]).json()["snapshot"]
+    assert len(snapshot["offers"]) == 2
+    assert snapshot["recommendation"]["offer_id"] == offer["id"]
+    assert cl.get(path + "/reports/" + report.json()["id"] + "/pdf").content.startswith(b"%PDF")
+    changed = cl.put(path, json={**saved["application"], "version": saved["version"],
+                                 "checklist": saved["checklist"], "annual_income": "60000"}).json()
+    assert changed["offers"][0]["stale"] is True
+    assert changed["recommendation"]["stale"] is True
+    assert cl.post(path + "/recommendation", json={
+        "version": changed["version"], "offer_id": offer["id"],
+        "rationale": "This old option no longer matches the borrower worksheet.",
+        "conditions": "Verify all required documents.",
+    }).status_code == 409
+
+
+def test_practice_underwriting_and_closing_require_verification(client):
+    cl, _ = client
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "yonathan"})
+    created = cl.post("/api/individual-cases/practice", json={
+        "applicant_name": "Fictional case", "requested_loan": "200000",
+    }).json()
+    path = "/api/individual-cases/" + created["id"]
+    case = cl.get(path).json()
+    saved = cl.put(path, json={
+        **case["application"], "version": case["version"], "checklist": case["checklist"],
+        "property_address": "123 Example Street", "purchase_price": "250000",
+        "annual_income": "120000", "liquid_assets": "90000", "reserves": "10000",
+        "property_tax_annual": "4000", "insurance_annual": "2000",
+        "first_due_date": "2026-12-01", "credit_authorized": True,
+    }).json()
+    option = cl.post(path + "/offers", json={
+        "version": saved["version"], "name": "Fixed", "loan_amount": "200000",
+        "annual_rate": "8", "term_months": 360,
+    }).json()["offers"][0]
+    rec = cl.post(path + "/recommendation", json={
+        "version": saved["version"], "offer_id": option["id"],
+        "rationale": "This option fits the practice ratios and leaves savings after closing.",
+        "conditions": "Verify every document and the property appraisal.",
+    })
+    assert rec.status_code == 200, rec.text
+    decision = cl.post(path + "/practice-decision", json={
+        "version": saved["version"], "decision": "conditional",
+        "comment": "Proceed only when the document checklist is complete.",
+    })
+    assert decision.status_code == 200, decision.text
+    assert cl.post(path + "/practice-close", json={"version": saved["version"]}).status_code == 422
+    verified = [{**item, "status": "verified"} for item in saved["checklist"]]
+    updated = cl.put(path, json={
+        **saved["application"], "version": saved["version"], "checklist": verified,
+    }).json()
+    assert updated["recommendation"]["stale"] is False
+    closed = cl.post(path + "/practice-close", json={"version": updated["version"]})
+    assert closed.status_code == 200, closed.text
+    assert closed.json()["status"] == "active"
+    assert closed.json()["application"]["annual_rate"] == "8"
+    assert closed.json()["recommendation"]["stale"] is False
+
+
+def test_coach_uses_luna_low_and_omits_identity(client, monkeypatch):
+    cl, _ = client
+    cl.post("/api/auth/logout")
+    cl.post("/api/auth/login", json={"identity": "yonathan"})
+    created = cl.post("/api/individual-cases/practice", json={
+        "applicant_name": "Private Person", "requested_loan": "200000",
+    }).json()
+    path = "/api/individual-cases/" + created["id"]
+    case = cl.get(path).json()
+    saved = cl.put(path, json={
+        **case["application"], "version": case["version"], "checklist": case["checklist"],
+        "property_address": "Private Address", "annual_income": "120000",
+    })
+    assert saved.status_code == 200
+    seen = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"output": [{"content": [{"type": "output_text", "text": "Check the saved figures next."}]}]}
+
+    class FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_):
+            pass
+
+        async def post(self, url, json, headers):
+            seen.update({"url": url, "payload": json, "headers": headers})
+            return FakeResponse()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only")
+    monkeypatch.setattr(main.httpx, "AsyncClient", lambda timeout: FakeClient())
+    result = cl.post(path + "/coach", json={"stage": "application", "question": "What next?"})
+    assert result.status_code == 200, result.text
+    assert result.json()["answer"] == "Check the saved figures next."
+    assert seen["payload"]["model"] == "gpt-6-luna"
+    assert seen["payload"]["reasoning"] == {"effort": "low"}
+    assert seen["payload"]["store"] is False
+    assert "Private Person" not in seen["payload"]["input"]
+    assert "Private Address" not in seen["payload"]["input"]
